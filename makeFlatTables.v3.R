@@ -77,6 +77,19 @@ computeTotalSearches    <- function(days,regex,negate=FALSE) {
         unlist(x [ whichnames ])
     })))
 }
+computeTotalGoogleSearches <- function(days){
+    computeTotalSearches(days,regex="google")
+}
+computeTotalYahooSearches <- function(days){
+    computeTotalSearches(days,regex="yahoo")
+}
+computeTotalBingSearches <- function(days){
+    computeTotalSearches(days,regex="bing")
+}
+computeTotalOthersSearches <- function(days){
+    computeTotalSearches(days,regex="(google|yahoo|bing)",negate=TRUE)
+}
+
 computeIsDefault        <- function(days) 1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
 compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     if(granularity=="day"){
@@ -101,10 +114,10 @@ computeAllStats <- function(days,control){
         tActiveHours      = isn(computeActiveSeconds(days),0),
         tNumSessions      = isn(computeNumSessions(days),0),
         tCrashes          = isn(computeTotalCrashes(days),0),
-        tGoogleSearch     = isn(computeTotalSearches(days,regex="google"),0),
-        tYahooSearch      = isn(computeTotalSearches(days,regex="yahoo"),0),
-        tBingSearch       = isn(computeTotalSearches(days,regex="bing"),0),
-        tOthersSearch     = isn(computeTotalSearches(days,regex="(google|yahoo|bing)",negate=TRUE),0),
+        tGoogleSearch     = isn(computeTotalGoogleSearches(days),0),
+        tYahooSearch      = isn(computeTotalYahooSearches(days),0),
+        tBingSearch       = isn(computeTotalBingSearches(days),0),
+        tOthersSearch     = isn(computeTotalOthersSearches(days),0),
         tIsDefault        = isn(computeIsDefault(days),0),
         t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0)
         )
