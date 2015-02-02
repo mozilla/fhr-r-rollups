@@ -103,6 +103,15 @@ compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     else NA
 }
 
+getProfileCreationDate <- function(b){
+    profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
+    if(is.null(profileCrDate)) {
+        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
+    }
+    if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
+    return(profileCrDate)
+}
+    
 
 computeAllStats <- function(days,control){
     c(
@@ -132,11 +141,8 @@ summaries <- function(a,b){
         bdim              <- getDimensions(b)
         bdim$snapshot     <- PARAM$whichDate
         bdim$granularity  <- PARAM$granularity
-        profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
-        if(is.null(profileCrDate)) {
-            profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
-        }
-        if(is.null(profileCrDate) || is.na(profileCrDate)) return()
+        profileCrDate     <- getProfileCreationDate(b)
+        if(is.null(profileCrDate)) return()
         lapply(PARAM$listOfTimeChunks,function(timeChunk){
             days           <- b$data$days [ names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
             bdim$timeStart <- timeChunk['start']
