@@ -102,6 +102,19 @@ compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     }
     else NA
 }
+computeChurn1           <- function(alldays,timeChunk){
+    ## Active in the 4-3 weks before the timeStart, but inactive
+    ## in 1-2 weeks before timeStart
+    ## This hardly means those profiles have gone away, many do come back.
+    st1 <- strftime(as.Date(timeChunk['start'])-14,"%Y-%m-%d")
+    ed1 <- timeChunk['start']
+    wasActiveLast14Days <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    st1 <- strftime(as.Date(timeChunk['start'])-30,"%Y-%m-%d")
+    ed1 <- strftime(as.Date(timeChunk['start'])-15,"%Y-%m-%d")
+    wasActivePrev14Days <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    1*(wasActiveLast14Days==FALSE && wasActivePrev14Days==TRUE)
+}
+computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)
 
 getProfileCreationDate <- function(b){
     profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
