@@ -1,4 +1,6 @@
-                                   
+
+### Time chunking ###
+
 dayTimeChunk <- function(fr, to){
     lapply(strftime(seq(from=as.Date(fr),to=as.Date(to),by=1),"%Y-%m-%d"),function(s){ c(start=s, end=s)})
 }
@@ -33,22 +35,94 @@ quarterTimeChunk <- function(years){
              c(start=sprintf("%s-10-01",year),end=sprintf("%s-12-31",year)))
     }),rec=FALSE)
 }
-    
+ 
 
+#---------------------------------------
 
+### Profile info dimensions ### 
+
+## Raw values for profile info dimensions.
 getDimensions <- function(b){
-    channel = isn(b$geckoAppInfo$updateChannel, "missing")
-    os      = isn(b$geckoAppInfo$os, "missing")
-    osdetail= local({
+    vendor <- isn(b$gecko$vendor, "missing")
+    name <- isn(b$gecko$name, "missing")
+    channel <- isn(b$geckoAppInfo$updateChannel, "missing")
+    os <- isn(b$geckoAppInfo$os, "missing")
+    osdetail <- local({
         if(os=="WINNT"){
-            WNVer((b$data$last$ org.mozilla.sysinfo.sysinfo$version))
-        }else os
+            WNVer(b$data$last$org.mozilla.sysinfo.sysinfo$version)
+        }else "none"
     })
-    locale  = isn(b$data$last$org.mozilla.appInfo.appinfo$locale, "missing")
-    geo     = isn(b$geo)
-    version = isn(b$geckoAppInfo$version,"missing")
-    list(vendor=isn(b$gecko$vendor,'missing'),name = isn(b$gecko$name,"missing"),channel=channel, os=os, osdetail=osdetail, locale=locale, geo=geo,version=version)
+    distribution <- isn(r$data$last$org.mozilla.appInfo.appinfo$distributionID,
+        "missing")
+    locale <- isn(b$data$last$org.mozilla.appInfo.appinfo$locale, "missing")
+    geo <- isn(b$geo)
+    version <- isn(b$geckoAppInfo$version, "missing")
+    
+    list(vendor=vendor, name=name, channel=channel, os=os, osdetail=osdetail, 
+        distribution=distribution, locale=locale, geo=geo, version=version)
 }
+
+## Summary or standardized values for profile info (for convenience). 
+## Pass in output of getDimensions.
+getStandardizedDimensions <- function(dims) {
+    isstdprofile <- isStandardProfile(dims$vendor, dims$name)
+    stdchannel <- getStandardChannel(dims$channel)
+    stdos <- getStandardOS(dims$os)
+    ismozdistrib <- isMozillaDistrib(dims$distribution)
+    distribpartner <-getPartnerName(dims$distribution)
+    
+    list(isstdprofile=isstdprofile, stdchannel=stdchannel, stdos=stdos,
+        ismozdistrib=ismozdistrib, distribpartner=distribpartner)
+}
+
+## Is the record considered a standard Firefox profile
+## (ie should be included in the set of "all Firefox profiles".
+isStandardProfile <- function(vendor, appname) {
+    identical(vendor, "Mozilla") && identical(appname, "Firefox")
+}
+
+## Standard channel name, if the channel string is considered
+## to belong to one of the 4 main channels, or "other".
+getStandardChannel <- function(channel) {
+    if(identical(channel, "missing")) return("other")
+    ## Release includes "release" and "esr".
+    if(grepl("^(release|esr(\\d{2})?)(-.+)?$", channel) return("release")
+    ## Prerelease.
+    chmatch <- regexpr("^(nightly|aurora|beta)(-.+)?$", channel)
+    if(chmatch < 0) "other" else regmatches(channel, chmatch)
+}
+
+## Standard OS name - for convenience in reports.
+## "Linux" bucket includes Unix-like.
+getStandardOS <- function(os) {
+    if(identical(os, "missing")) return("other")
+    if(identical(os, "WINNT")) return("Windows")
+    if(identical(os, "Darwin")) return("Mac")
+    if(grepl("Linux|BSD|SunOS", os)) return("Linux")
+    "other"
+}
+ 
+## Is the distribution considered a standard Mozilla distribution?
+## Includes stock and few other specific cases. 
+isMozillaDistrib <- function(distrib) {
+    if(identical(distrib, "missing")) return(FALSE)
+    ## Stock has distributionID == "" (empty string).
+    !nzchar(distrib) || identical(distrib, "euballot") ||
+        grepl("mozilla", distrib, ignore.case = TRUE)
+}
+
+## If the distribution is considered a partner build, find the partner name.
+## Otherwise, return "none".
+## partner.list is a lookup table mapping distribution IDs
+## to corresponding partner name.
+getPartnerName <- function(distrib) {
+    if(!(distrib %in% names(partner.list))) return("none")
+    partner.list[[distrib]]
+}
+
+#---------------------------------------
+
+### Activity stats ###
 
 computeActives          <- function(days)    if(length(days)>0) 1 else 0
 computeExistingProfiles <- function(profileCrDate,timeChunk) if(profileCrDate < timeChunk['start']) 1 else 0
@@ -145,31 +219,39 @@ computeAllStats <- function(days,control){
         )
 }
     
+#---------------------------------------
+
+### Job map function ###
     
 summaries <- function(a,b){
-        if(PARAM$needstobetagged){
-            b <- fromJSON(b)
-            b$data$days <- tagDaysByBuildVersion(b)
-        }
-        bdim              <- getDimensions(b)
-        bdim$snapshot     <- PARAM$whichDate
-        bdim$granularity  <- PARAM$granularity
-        profileCrDate     <- getProfileCreationDate(b)
-        if(is.null(profileCrDate)) return()
-        lapply(PARAM$listOfTimeChunks,function(timeChunk){
-            days           <- b$data$days [ names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
-            bdim$timeStart <- timeChunk['start']
-            bdim$timeEnd   <- timeChunk['end']
-            ## Your custome code can be here (in statcomputer)
-            mystats        <- PARAM$statcomputer(days, control=list(alldays = b$data$days,profileCrDate=profileCrDate
-                                                           , granularity = PARAM$granularity, timeChunk=timeChunk))
-            if(PARAM$usedt){
-                rhcollect(sample(1:1000,1), cbind( as.data.table( bdim), as.data.table(as.list(mystats)))) 
-            }else{
-                rhcollect(bdim,mystats)
-            }
-        })
+    if(PARAM$needstobetagged){
+        b <- fromJSON(b)
+        b$data$days <- tagDaysByBuildVersion(b)
     }
+    bdim              <- getDimensions(b)
+    bdim              <- c(bdim, getStandardizedDimensions(bdim))
+    bdim$snapshot     <- PARAM$whichDate
+    bdim$granularity  <- PARAM$granularity
+    profileCrDate     <- getProfileCreationDate(b)
+    if(is.null(profileCrDate)) return()
+    lapply(PARAM$listOfTimeChunks,function(timeChunk){
+        days           <- b$data$days [ names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
+        bdim$timeStart <- timeChunk['start']
+        bdim$timeEnd   <- timeChunk['end']
+        ## Your custome code can be here (in statcomputer)
+        mystats        <- PARAM$statcomputer(days, control=list(
+            alldays = b$data$days,
+            profileCrDate=profileCrDate, 
+            granularity = PARAM$granularity, 
+            timeChunk=timeChunk)
+        )
+        if(PARAM$usedt){
+            rhcollect(sample(1:1000,1), cbind(as.data.table(bdim), as.data.table(as.list(mystats)))) 
+        }else{
+            rhcollect(bdim,mystats)
+        }
+    })
+}
 
 ################################################################################
 ## Examples
