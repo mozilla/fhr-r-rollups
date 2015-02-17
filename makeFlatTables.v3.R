@@ -120,28 +120,45 @@ getPartnerName <- function(distrib) {
     partner.list[[distrib]]
 }
 
+getProfileCreationDate <- function(b){
+    profileCrDate <- strftime(as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
+    if(is.null(profileCrDate)) {
+        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
+    }
+    if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
+    return(profileCrDate)
+}
+
 #---------------------------------------
 
 ### Activity stats ###
 
+## Whether profile was active in time chunk.
 computeActives          <- function(days)    if(length(days)>0) 1 else 0
+## Whether profile was created prior to time chunk.
 computeExistingProfiles <- function(profileCrDate,timeChunk) if(profileCrDate < timeChunk['start']) 1 else 0
+## Whether profile was created during time chunk.
 computeNewProfiles      <- function(profileCrDate,timeChunk) if(profileCrDate >= timeChunk['start'] && profileCrDate <= timeChunk['end']) 1 else 0
+## Whether profile existed during time chunk.
 computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <= timeChunk['end']) 1 else 0
+## Total time in seconds for sessions started during time chunk.
 computeTotalSeconds     <- function(days)
 {
     sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanTotalTime,dc$org.mozilla.appSessions.previous$abortedTotalTime)}))))
 }
+## Total active time in seconds for sessions started during time chunk.
 computeActiveSeconds    <- function(days)
 {
     sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanActiveTicks,dc$org.mozilla.appSessions.previous$abortedActiveTicks)}))))*5
 }
+## Total # sessions started during time chunk.
 computeNumSessions    <- function(days)
 {
     length(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$main) }))))
 }
-
+## Total # crashes.
 computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c(dc$org.mozilla.crashes.crashes[c("main-crash", "content-crash")]))))
+## Total # SAP searches.
 computeTotalSearches    <- function(days,regex,negate=FALSE) {
     sum(unlist(lapply(days,function(dc){
         x <- dc$org.mozilla.searches.counts;
@@ -151,20 +168,29 @@ computeTotalSearches    <- function(days,regex,negate=FALSE) {
         unlist(x [ whichnames ])
     })))
 }
+## Total # paid SAP searches.
 computeTotalGoogleSearches <- function(days){
     computeTotalSearches(days,regex="google")
 }
+## Total Yahoo searches through official plugins.
 computeTotalYahooSearches <- function(days){
     computeTotalSearches(days,regex="yahoo")
 }
+## Total Bing searches through official plugins.
 computeTotalBingSearches <- function(days){
     computeTotalSearches(days,regex="bing")
 }
+## Total Google searches through official plugins.
+computeTotalBingSearches <- function(days){
+    computeTotalSearches(days,regex="bing")
+}
+## Total SAP searches that are neither of official Google, Bing, Yahoo. 
 computeTotalOthersSearches <- function(days){
     computeTotalSearches(days,regex="(google|yahoo|bing)",negate=TRUE)
 }
-
+## Whether Fx was considered the default browser across the time chunk.
 computeIsDefault        <- function(days) 1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
+## Whether the profile was active on 5 out of the last 7 days.
 compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     if(granularity=="day"){
         beg <- strftime(as.Date(timeChunk['start'])-6,"%Y-%m-%d")
@@ -176,6 +202,7 @@ compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     }
     else NA
 }
+## Whether the profle was peviously active and since inactive.
 computeChurn1           <- function(alldays,timeChunk){
     ## Active in the 4-3 weks before the timeStart, but inactive
     ## in 1-2 weeks before timeStart
@@ -188,18 +215,10 @@ computeChurn1           <- function(alldays,timeChunk){
     wasActivePrev14Days <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
     1*(wasActiveLast14Days==FALSE && wasActivePrev14Days==TRUE)
 }
-computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)
+computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
 
-getProfileCreationDate <- function(b){
-    profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
-    if(is.null(profileCrDate)) {
-        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
-    }
-    if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
-    return(profileCrDate)
-}
-    
-
+## Collect all activity stats. 
+## Each of these stats will be added up within segments. 
 computeAllStats <- function(days,control){
     c(
         tActives          = isn(computeActives(days),0),
