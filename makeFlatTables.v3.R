@@ -127,10 +127,15 @@ getPartnerName <- function(distrib) {
     partner.list[[distrib]]
 }
 
+
 getProfileCreationDate <- function(b){
-    profileCrDate <- strftime(as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
+    profileCrDate <- strftime(as.Date(
+        b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), 
+        "%Y-%m-%d")
     if(is.null(profileCrDate)) {
-        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
+        profileCrDate <- if(length(b$data$days) > 0) { 
+            min(names(b$data$days)) 
+        } else { b$thisPingDate }
     }
     if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
     return(profileCrDate)
@@ -163,8 +168,10 @@ computeNumSessions    <- function(days)
 {
     length(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$main) }))))
 }
-## Total # crashes.
-computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c(dc$org.mozilla.crashes.crashes[c("main-crash", "content-crash")]))))
+
+#---------------------------------------
+
+### Search counts ###
 
 ## Extract all SAP search counts over the time chunk, 
 ## named by their (raw) search provider name.
@@ -218,12 +225,10 @@ computeTotalSearches <- function(searches) {
 ## Search providers to include for paid searches.
 searchNamesPaid <- function(distribtype) {
     ## None on non-standard/non-partner distributions. 
-    switch(distribtype, 
-        other = NULL,
-        mozilla = paid.plugins,
+    switch(distribtype, other = NULL, mozilla = paid.plugins,
         ## Default case is partner build.
         ## Also count other-prefixed plugins relevant to that partner.
-        c(paid.plugins, sprintf("other-%s", partner.plugins[[distribtype]]))
+        append(paid.plugins, sprintf("other-%s", partner.plugins[[distribtype]]))
 }
 
 ## Search providers to include for Google.
@@ -235,8 +240,8 @@ searchNamesGoogle <- function() {
 searchNamesYahoo <- function(distribtype) {
     searchnames <- official.plugins[grepl("^yahoo", official.plugins)]
     if(identical(distribtype, "yahoo")) {
-        searchnames <- c(searchnames, 
-            sprintf("other-%s", partner.plugins[["yahoo"]])
+        searchnames <- append(searchnames, 
+            sprintf("other-%s", partner.plugins[["yahoo"]]))
     }
     searchnames
 }
@@ -245,12 +250,15 @@ searchNamesYahoo <- function(distribtype) {
 searchNamesBing <- function(distribtype) {
     searchnames <- official.plugins[grepl("^bing", official.plugins)]
     if(identical(distribtype, "bing")) {
-        searchnames <- c(searchnames, 
+        searchnames <- append(searchnames, 
             sprintf("other-%s", partner.plugins[["bing"]])
     }
     searchnames
 }
 
+#---------------------------------------
+
+### Other stats ###
 
 ## Whether Fx was considered the default browser across the time chunk.
 computeIsDefault        <- function(days) 1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
@@ -281,6 +289,10 @@ computeChurn1           <- function(alldays,timeChunk){
 }
 computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
 
+
+## Total # crashes.
+computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c(dc$org.mozilla.crashes.crashes[c("main-crash", "content-crash")]))))
+
 ## Collect all activity stats. 
 ## Each of these stats will be added up within segments. 
 computeAllStats <- function(days,control){
@@ -304,7 +316,7 @@ computeAllStats <- function(days,control){
                                 searchNamesPaid(control$distribtype)),
         tIsDefault        = isn(computeIsDefault(days),0),
         t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0)
-        )
+    )
 }
     
 #---------------------------------------
@@ -317,13 +329,13 @@ summaries <- function(a,b){
         b$data$days <- tagDaysByBuildVersion(b)
     }
     bdim              <- getDimensions(b)
-    bdim              <- c(bdim, getStandardizedDimensions(bdim))
+    bdim              <- append(bdim, getStandardizedDimensions(bdim))
     bdim$snapshot     <- PARAM$whichDate
     bdim$granularity  <- PARAM$granularity
     profileCrDate     <- getProfileCreationDate(b)
     if(is.null(profileCrDate)) return()
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
-        days           <- b$data$days [ names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
+        days           <- b$data$days [names(b$data$days)>=timeChunk['start'] & names(b$data$days)<= timeChunk['end']]
         bdim$timeStart <- timeChunk['start']
         bdim$timeEnd   <- timeChunk['end']
         searchcounts   <- getAllSearches(days)
@@ -337,7 +349,8 @@ summaries <- function(a,b){
             distribtype = bdim$distribtype)
         )
         if(PARAM$usedt){
-            rhcollect(sample(1:1000,1), cbind(as.data.table(bdim), as.data.table(as.list(mystats)))) 
+            rhcollect(sample(1:1000,1), 
+                cbind(as.data.table(bdim), as.data.table(as.list(mystats)))) 
         }else{
             rhcollect(bdim,mystats)
         }
