@@ -158,17 +158,53 @@ computeNumSessions    <- function(days)
 }
 ## Total # crashes.
 computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c(dc$org.mozilla.crashes.crashes[c("main-crash", "content-crash")]))))
-## Total # SAP searches.
-computeTotalSearches    <- function(days,regex,negate=FALSE) {
-    sum(unlist(lapply(days,function(dc){
-        x <- dc$org.mozilla.searches.counts;
-        x[["_v"]] <- NULL
-        whichnames <- grepl(regex,names(x))
-        whichnames <- if(negate) !whichnames else whichnames
-        unlist(x [ whichnames ])
-    })))
+
+## Extract all SAP search counts over the time chunk, 
+## named by their (raw) search provider name.
+getAllSearches <- function(days) { 
+    names(days) <- NULL
+    sc <- unlist(lapply(days, function(d) {
+        s <- d$org.mozilla.searches.counts
+        ## Preprocess.
+        ## Remove version field if present.
+        s[["_v"]] <- NULL
+        ## Sanity check on count values.
+        ss <- as.numeric(unlist(s))
+        to.remove <- is.na(ss) | ss <= 0
+        if(any(to.remove)) s <- s[!to.remove]
+        if(length(s) == 0) return(NULL)
+        
+        ## Extract search provider names.
+        spv <- names(s)
+        ## Format should be <searchengine>.<SAP>.
+        ## Don't check for exact SAP names (in case they change),
+        ## but search count string should end with [a-z] characters.
+        spv[!grepl("^.+\\.[a-z]+$", spv)] <- NA
+        ## Remove SAP string.
+        spv <- sub("\\.[^.]+$", "", spv)
+        ## Trim search provider name. 
+        ## In particular, a bunch of Bing searches are recorded as "Bing ".
+        spv <- gsub("^\\s+|\\s+$", "", spv)
+        spv[!nzchar(spv)] <- NA
+        
+        s <- setNames(s, spv)
+        if(any(is.na(spv))) s <- s[!is.na(spv)]
+        s
+    }))
+    tapply(sc, names(sc), sum)
 }
+
+## Total # SAP searches.
+computeTotalSearches <- function(searches) {
+    sum(searches)
+}
+
 ## Total # paid SAP searches.
+computeTotalPaidSearches <- function(searches) {
+    
+}
+
+## Total Google searches through official plugins.
 computeTotalGoogleSearches <- function(days){
     computeTotalSearches(days,regex="google")
 }
@@ -177,10 +213,6 @@ computeTotalYahooSearches <- function(days){
     computeTotalSearches(days,regex="yahoo")
 }
 ## Total Bing searches through official plugins.
-computeTotalBingSearches <- function(days){
-    computeTotalSearches(days,regex="bing")
-}
-## Total Google searches through official plugins.
 computeTotalBingSearches <- function(days){
     computeTotalSearches(days,regex="bing")
 }
@@ -257,6 +289,7 @@ summaries <- function(a,b){
         days           <- b$data$days [ names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
         bdim$timeStart <- timeChunk['start']
         bdim$timeEnd   <- timeChunk['end']
+        searchcounts   <- getAllSearches(days)
         ## Your custome code can be here (in statcomputer)
         mystats        <- PARAM$statcomputer(days, control=list(
             alldays = b$data$days,
