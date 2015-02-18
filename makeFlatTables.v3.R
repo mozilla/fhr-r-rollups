@@ -168,10 +168,13 @@ computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c
 
 ## Extract all SAP search counts over the time chunk, 
 ## named by their (raw) search provider name.
+## Returns NULL if no searches 
+## (so summing the output in this case should give 0).
 getAllSearches <- function(days) { 
     names(days) <- NULL
     sc <- unlist(lapply(days, function(d) {
         s <- d$org.mozilla.searches.counts
+        if(length(s) == 0) return(NULL)
         ## Preprocess.
         ## Remove version field if present.
         s[["_v"]] <- NULL
@@ -198,7 +201,13 @@ getAllSearches <- function(days) {
         if(any(is.na(spv))) s <- s[!is.na(spv)]
         s
     }))
+    if(length(sc) == 0) return(NULL)
     tapply(sc, names(sc), sum)
+}
+
+## Count searches whose provider names appear in the specified whitelist.
+countSearches <- function(searches, namestoinclude) {
+    sum(searches[names(searches) %in% namestoinclude])
 }
 
 ## Total # SAP searches.
@@ -206,27 +215,43 @@ computeTotalSearches <- function(searches) {
     sum(searches)
 }
 
-## Total # paid SAP searches.
-computeTotalPaidSearches <- function(searches) {
-    
+## Search providers to include for paid searches.
+searchNamesPaid <- function(distribtype) {
+    ## None on non-standard/non-partner distributions. 
+    switch(distribtype, 
+        other = NULL,
+        mozilla = paid.plugins,
+        ## Default case is partner build.
+        ## Also count other-prefixed plugins relevant to that partner.
+        c(paid.plugins, sprintf("other-%s", partner.plugins[[distribtype]]))
 }
 
-## Total Google searches through official plugins.
-computeTotalGoogleSearches <- function(days){
-    computeTotalSearches(days,regex="google")
+## Search providers to include for Google.
+searchNamesGoogle <- function() {
+    official.plugins[grepl("^google", official.plugins)]
 }
-## Total Yahoo searches through official plugins.
-computeTotalYahooSearches <- function(days){
-    computeTotalSearches(days,regex="yahoo")
+
+## Search providers to include for Yahoo.
+searchNamesYahoo <- function(distribtype) {
+    searchnames <- official.plugins[grepl("^yahoo", official.plugins)]
+    if(identical(distribtype, "yahoo")) {
+        searchnames <- c(searchnames, 
+            sprintf("other-%s", partner.plugins[["yahoo"]])
+    }
+    searchnames
 }
-## Total Bing searches through official plugins.
-computeTotalBingSearches <- function(days){
-    computeTotalSearches(days,regex="bing")
+
+## Search providers to include for Bing.
+searchNamesBing <- function(distribtype) {
+    searchnames <- official.plugins[grepl("^bing", official.plugins)]
+    if(identical(distribtype, "bing")) {
+        searchnames <- c(searchnames, 
+            sprintf("other-%s", partner.plugins[["bing"]])
+    }
+    searchnames
 }
-## Total SAP searches that are neither of official Google, Bing, Yahoo. 
-computeTotalOthersSearches <- function(days){
-    computeTotalSearches(days,regex="(google|yahoo|bing)",negate=TRUE)
-}
+
+
 ## Whether Fx was considered the default browser across the time chunk.
 computeIsDefault        <- function(days) 1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
 ## Whether the profile was active on 5 out of the last 7 days.
@@ -268,10 +293,15 @@ computeAllStats <- function(days,control){
         tActiveHours      = isn(computeActiveSeconds(days),0),
         tNumSessions      = isn(computeNumSessions(days),0),
         tCrashes          = isn(computeTotalCrashes(days),0),
-        tGoogleSearch     = isn(computeTotalGoogleSearches(days),0),
-        tYahooSearch      = isn(computeTotalYahooSearches(days),0),
-        tBingSearch       = isn(computeTotalBingSearches(days),0),
-        tOthersSearch     = isn(computeTotalOthersSearches(days),0),
+        tTotalSearch      = computeTotalSearches(control$searchcounts),
+        tGoogleSearch     = countSearches(control$searchcounts,
+                                searchNamesGoogle()),
+        tYahooSearch      = countSearches(control$searchcounts,
+                                searchNamesYahoo(control$distribtype)),
+        tBingSearch       = countSearches(control$searchcounts,
+                                searchNamesBing(control$distribtype)),
+        tPaidSearch       = countSearches(control$searchcounts,
+                                searchNamesPaid(control$distribtype)),
         tIsDefault        = isn(computeIsDefault(days),0),
         t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0)
         )
@@ -302,7 +332,9 @@ summaries <- function(a,b){
             alldays = b$data$days,
             profileCrDate=profileCrDate, 
             granularity = PARAM$granularity, 
-            timeChunk=timeChunk)
+            timeChunk=timeChunk,
+            searchcounts = searchcounts,
+            distribtype = bdim$distribtype)
         )
         if(PARAM$usedt){
             rhcollect(sample(1:1000,1), cbind(as.data.table(bdim), as.data.table(as.list(mystats)))) 
