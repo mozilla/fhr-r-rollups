@@ -471,6 +471,13 @@ summaries <- function(a,b){
     })
 }
 
+shared.files <- path.to.shared.R.data.files.on.hdfs
+setup <- expression({
+    load(shared.file)
+})
+
+
+     
 ################################################################################
 ## Examples
 ################################################################################
