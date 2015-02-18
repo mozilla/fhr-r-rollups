@@ -68,11 +68,18 @@ getStandardizedDimensions <- function(dims) {
     isstdprofile <- isStandardProfile(dims$vendor, dims$name)
     stdchannel <- getStandardChannel(dims$channel)
     stdos <- getStandardOS(dims$os)
-    ismozdistrib <- isMozillaDistrib(dims$distribution)
-    distribpartner <-getPartnerName(dims$distribution)
+    ## Identifier for the distribution group.
+    ## "mozilla" for standard Moz distributions,
+    ## <partnerID> for partner builds,
+    ## otherwise "other".
+    distribtype <- if(isMozillaDistrib(dims$distribution)) { 
+        "mozilla" 
+    } else { 
+        getPartnerName(dims$distribution) 
+    }
     
     list(isstdprofile=isstdprofile, stdchannel=stdchannel, stdos=stdos,
-        ismozdistrib=ismozdistrib, distribpartner=distribpartner)
+        distribtype=distribtype)
 }
 
 ## Is the record considered a standard Firefox profile
@@ -112,11 +119,11 @@ isMozillaDistrib <- function(distrib) {
 }
 
 ## If the distribution is considered a partner build, find the partner name.
-## Otherwise, return "none".
+## Otherwise, return "other".
 ## partner.list is a lookup table mapping distribution IDs
 ## to corresponding partner name.
 getPartnerName <- function(distrib) {
-    if(!(distrib %in% names(partner.list))) return("none")
+    if(!(distrib %in% names(partner.list))) return("other")
     partner.list[[distrib]]
 }
 
