@@ -145,11 +145,12 @@ getProfileCreationDate <- function(b){
 
 computeIfProfileHasUp <- function(alldays, timeChunk,b){
     ## Was the profile active in the 28 days before the beginning of the window and has UP?
-    upname <- "firefox.interest.dashboard@up.mozilla"
+    upname    <- "firefox.interest.dashboard@up.mozilla"
     x <- if( (!is.null(b$data$last$org.mozilla.addons.addons) && upname %in% names(b$data$last$org.mozilla.addons.addons))
-            || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active))) 1 else 0
-    st1 <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
-    en1 <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
+            || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active)))
+        1 else 0
+    st1       <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
+    en1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
     wasActive <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
     return(1*(wasActive && x))
 }
