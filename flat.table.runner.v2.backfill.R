@@ -1,4 +1,8 @@
-source("~/tmp/makeFlatTables.v3.R")
+setwd("fhr-r-rollups")
+
+source("sguha.functions.R")
+source("makeFlatTables.v3.R")
+
 store.path <- "/user/sguha/fhraggr"
 
 
@@ -7,7 +11,7 @@ extract.date <- function(s){
     list(name=a, date=as.Date(a))
 }
 
-waitForJobs <- function(s,L){
+waitForJobs <- function(s,i,outof,L){
     resus <- lapply(L, function(ajob){
         rhstatus(ajob,mon.sec=Inf)
     })
@@ -21,7 +25,7 @@ waitForJobs <- function(s,L){
         },error=function(e){ data.table(name=sprintf("could not get errors for %s",ajob$jobname), pct=0, name="MISS")})
     }))
     embody <- paste(c(hdfs.getwd(),"\n",capture.output(print(rbindlist(resusText)))), collapse="\n")
-    email(subj=sprintf("BACKFILL FOR %s done",s), body=embody)
+    email(subj=sprintf("BACKFILL FOR %s [%s/%s] done",s,i,outof), body=embody)
     list(TRUE,embody)
 }
     
@@ -32,7 +36,8 @@ pathnames <- sort(rhls("/user/sguha/fhr/samples/backup")$file)
 BACK <- 170
 
 
-for( p in X){
+for( pi in seq_along(pathnames)){
+    p <- pathnames[pi]
     dt <- extract.date(p)
     fileOriginDate <- dt$date
     MS <- 0
@@ -67,15 +72,15 @@ for( p in X){
                       ,param=list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
 
     ## Daily Summary
-    timeChunksDay <- dayTimeChunk(timeperiod$start, timeperiod$end)
-    zday <- rhwatch(map=summaries, reduce=rhoptions()$temp$colsummer, input=input.path
-                    ,debug='collect'
-                    ,output='rday'
-                    ,mon.sec=MS
-                    ,jobname=sprintf("Daily [ %s ]",dt$name)
-                    ,setup=expression({ library(rjson) })
-                    ,read=FALSE
-                    ,param=list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
-    print(waitForJobs(p,list(zweek, zmonth, zday)))
+    ## timeChunksDay <- dayTimeChunk(timeperiod$start, timeperiod$end)
+    ## zday <- rhwatch(map=summaries, reduce=rhoptions()$temp$colsummer, input=input.path
+    ##                 ,debug='collect'
+    ##                 ,output='rday'
+    ##                 ,mon.sec=MS
+    ##                 ,jobname=sprintf("Daily [ %s ]",dt$name)
+    ##                 ,setup=expression({ library(rjson) })
+    ##                 ,read=FALSE
+    ##                 ,param=list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
+    print(waitForJobs(p,i,length(pathnames),list(zweek, zmonth)))
 }
 email("ALL BACKFILLS DONE")
