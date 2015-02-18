@@ -52,7 +52,7 @@ getDimensions <- function(b){
             WNVer(b$data$last$org.mozilla.sysinfo.sysinfo$version)
         }else "none"
     })
-    distribution <- isn(r$data$last$org.mozilla.appInfo.appinfo$distributionID,
+    distribution <- isn(b$data$last$org.mozilla.appInfo.appinfo$distributionID,
         "missing")
     locale <- isn(b$data$last$org.mozilla.appInfo.appinfo$locale, "missing")
     geo <- isn(b$geo)
@@ -130,10 +130,9 @@ getPartnerName <- function(distrib) {
     if(distrib %in% names(partner.list.current)) 
         return(partner.list.current[[distrib]])
     if(distrib %in% names(partner.list.expired))
-        return(sprintf("%s|expired", partner.list.expired[[distrib]])
+        return(sprintf("%s|expired", partner.list.expired[[distrib]]))
     "other"
 }
-
 
 getProfileCreationDate <- function(b){
     profileCrDate <- strftime(as.Date(
@@ -305,7 +304,7 @@ searchNamesOfficialAndPartner <- function(distribtype, pluginprefix = NULL,
     
     if(length(partnername) > 0 && distribtype %in% partnername) {
         searchnames <- append(searchnames, 
-            sprintf("other-%s", partner.plugins[[distribtype]])
+            sprintf("other-%s", partner.plugins[[distribtype]]))
     }
     searchnames
 }
@@ -410,7 +409,7 @@ summaries <- function(a,b){
     bdim              <- getDimensions(b)
     bdim              <- append(bdim, getStandardizedDimensions(bdim))
     bdim$snapshot     <- PARAM$whichDate
-    bdim$granularity  <- PARAM$granularity
+    bdim$granularity  <- PARAM$granularity  
     profileCrDate     <- getProfileCreationDate(b)
     if(is.null(profileCrDate)) return()
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
