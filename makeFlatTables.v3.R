@@ -453,6 +453,8 @@ summaries <- function(a,b){
         bdim$timeStart <- timeChunk['start']
         bdim$timeEnd   <- timeChunk['end']
         ## Your custome code can be here (in statcomputer)
+        activity       <- getAllActivity(days)
+        search         <- getAllSearches(days)
         mystats        <- PARAM$statcomputer(days, control=list(
             jsObject      = b,
             profileCrDate = profileCrDate, 
