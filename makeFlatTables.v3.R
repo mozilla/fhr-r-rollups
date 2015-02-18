@@ -1,6 +1,25 @@
 
 ### Time chunking ###
 
+winVerCheck <- function(ver,keepverforothers=FALSE){
+    ## http://www.msigeek.com/442/windows-os-version-numbers
+    keepverforothers=eval(keepverforothers)
+    mu <- sapply(c("win7"="6.1","winVista"="6.0",'winXP'="(5.1|5.2)",'win8/Server2012' = "6.2"
+                   ,"win2K"="5.0","winMe"="4.9", "win98"="4.1","win95"="4.0","winNT"="3.5")
+                 ,function(r) sprintf("^(%s)",r))
+    mun <- names(mu)
+    id <- 1:length(mu)
+    return(function(s){
+        if(is.na(s) || is.null(s) || length(s)==0) return(NA)
+        for(i in id){
+            if(grepl(mu[i],s)) return(mun[i])
+        }
+        if(keepverforothers) return(sprintf("winOther_%s",s)) else ("winOthers")
+  })
+}
+WNVer <- winVerCheck(keepverforothers=TRUE)
+isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0) subcode else s
+                                   
 dayTimeChunk <- function(fr, to){
     lapply(strftime(seq(from=as.Date(fr),to=as.Date(to),by=1),"%Y-%m-%d"),function(s){ c(start=s, end=s)})
 }
@@ -364,6 +383,26 @@ computeChurn1           <- function(alldays,timeChunk){
 }
 computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
 
+getProfileCreationDate <- function(b){
+    profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
+    if(is.null(profileCrDate)) {
+        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
+    }
+    if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
+    return(profileCrDate)
+}
+
+computeIfProfileHasUp <- function(alldays, timeChunk,b){
+    ## Was the profile active in the 28 days before the beginning of the window and has UP?
+    upname    <- "firefox.interest.dashboard@up.mozilla"
+    x <- if( (!is.null(b$data$last$org.mozilla.addons.addons) && upname %in% names(b$data$last$org.mozilla.addons.addons))
+            || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active)))
+        1 else 0
+    st1       <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
+    en1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
+    wasActive <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    return(1*(wasActive && x))
+}
 
 ## Total # crashes.
 computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c(dc$org.mozilla.crashes.crashes[c("main-crash", "content-crash")]))))
@@ -393,7 +432,17 @@ computeAllStats <- function(days,control){
         tOfficialSearch   = countSearches(control$searchcounts,
                                 searchNamesOfficial(control$distribtype)),
         tIsDefault        = isn(computeIsDefault(days),0),
-        t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0)
+        t5outOf7          = isn(compute5outOf7(days, 
+                                alldays = control$jsObject$data$days,
+                                granularity =control$granularity,
+                                timeChunk = control$timeChunk),0),
+        tChurned          = isn(computeChurn(
+                                alldays = control$jsObject$data$days, 
+                                timeChunk=control$timeChunk),0)
+        tHasUP            = isn(computeIfProfileHasUp(
+                                alldays=control$jsObject$data$days,
+                                timeChunk=control$timeChunk,
+                                b=control$jsObject),0)
     )
 }
     
@@ -409,18 +458,16 @@ summaries <- function(a,b){
     bdim              <- getDimensions(b)
     bdim              <- append(bdim, getStandardizedDimensions(bdim))
     bdim$snapshot     <- PARAM$whichDate
-    bdim$granularity  <- PARAM$granularity  
+    bdim$granularity  <- PARAM$granularity
     profileCrDate     <- getProfileCreationDate(b)
     if(is.null(profileCrDate)) return()
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
-        days           <- b$data$days [names(b$data$days)>=timeChunk['start'] & names(b$data$days)<= timeChunk['end']]
+        days           <- b$data$days [names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
         bdim$timeStart <- timeChunk['start']
         bdim$timeEnd   <- timeChunk['end']
-        activity       <- getAllActivity(days)
-        searchcounts   <- getAllSearches(days)
         ## Your custome code can be here (in statcomputer)
         mystats        <- PARAM$statcomputer(days, control=list(
-            alldays = b$data$days,
+            jsObject=b,
             profileCrDate=profileCrDate, 
             granularity = PARAM$granularity, 
             timeChunk=timeChunk,
