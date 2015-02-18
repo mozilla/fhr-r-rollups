@@ -145,6 +145,38 @@ getProfileCreationDate <- function(b){
 
 ### Activity stats ###
 
+## Extract all session activity over the time chunk.
+## Returns a list with summary stats for each day.
+getAllActivity <- function(days) {
+    if(length(days) == 0) return(NULL)
+    act <- lapply(days, function(d) {
+        d <- d$org.mozilla.appSessions.previous
+        if(length(d) == 0) return(NULL)
+        
+        tt <- c(d$cleanTotalTime, d$abortedTotalTime)
+        at <- c(d$cleanActiveTicks, d$abortedActiveTicks)
+        ## Each vector must have the same number of sessions. 
+        if(!identical(length(tt), length(at))) return(NULL)
+        ## Make sure the record for this day is non-null.
+        if(length(tt) == 0) return(NULL)
+        
+        ## Check for NA, negative times, or unreasonably huge times
+        ## (indicating errors). 
+        ## In checking for positive times, active ticks could be 0.
+        bad <- is.na(tt) | is.na(at) | tt <= 0 | at < 0 |
+            tt > 15552000 | at > 3110400
+        if(all(bad)) return(NULL)
+        if(any(bad)) {
+            tt <- tt[!bad]
+            at <- at[!bad]
+        }
+        
+        list(nsessions = length(tt), totalSeconds = sum(tt), 
+            activeSeconds = sum(at) * 5)
+    })
+    act[!unlist(lapply(act, is.null))]
+}
+
 ## Whether profile was active in time chunk.
 computeActives          <- function(days)    if(length(days)>0) 1 else 0
 ## Whether profile was created prior to time chunk.
@@ -153,21 +185,32 @@ computeExistingProfiles <- function(profileCrDate,timeChunk) if(profileCrDate < 
 computeNewProfiles      <- function(profileCrDate,timeChunk) if(profileCrDate >= timeChunk['start'] && profileCrDate <= timeChunk['end']) 1 else 0
 ## Whether profile existed during time chunk.
 computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <= timeChunk['end']) 1 else 0
+# computeTotalSeconds     <- function(days)
+# {
+    # sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanTotalTime,dc$org.mozilla.appSessions.previous$abortedTotalTime)}))))
+# }
+# computeActiveSeconds    <- function(days)
+# {
+    # sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanActiveTicks,dc$org.mozilla.appSessions.previous$abortedActiveTicks)}))))*5
+# }
+# computeNumSessions    <- function(days)
+# {
+    # length(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$main) }))))
+# }
+
 ## Total time in seconds for sessions started during time chunk.
-computeTotalSeconds     <- function(days)
-{
-    sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanTotalTime,dc$org.mozilla.appSessions.previous$abortedTotalTime)}))))
+computeTotalSeconds <- function(activity) {
+    sum(unlist(lapply(activity, "[[", "totalSeconds")))
 }
 ## Total active time in seconds for sessions started during time chunk.
-computeActiveSeconds    <- function(days)
-{
-    sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanActiveTicks,dc$org.mozilla.appSessions.previous$abortedActiveTicks)}))))*5
+computeActiveSeconds <- function(activity) {
+    sum(unlist(lapply(activity, "[[", "activeSeconds")))
 }
 ## Total # sessions started during time chunk.
-computeNumSessions    <- function(days)
-{
-    length(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$main) }))))
+computeNumSessions <- function(activity) {
+    sum(unlist(lapply(activity, "[[", "nsessions")))
 }
+
 
 #---------------------------------------
 
@@ -178,6 +221,7 @@ computeNumSessions    <- function(days)
 ## Returns NULL if no searches 
 ## (so summing the output in this case should give 0).
 getAllSearches <- function(days) { 
+    if(length(days) == 0) return(NULL)
     names(days) <- NULL
     sc <- unlist(lapply(days, function(d) {
         s <- d$org.mozilla.searches.counts
@@ -298,12 +342,15 @@ computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c
 computeAllStats <- function(days,control){
     c(
         tActives          = isn(computeActives(days),0),
-        tTotalProfiles    = isn(computeTotalProfiles(control$profileCrDate,control$timeChunk),0),
-        tExistingProfiles = isn(computeExistingProfiles(control$profileCrDate,control$timeChunk),0),
-        tNewProfiles      = isn(computeNewProfiles(control$profileCrDate,control$timeChunk),0),
-        tTotalHours       = isn(computeTotalSeconds(days),0),
-        tActiveHours      = isn(computeActiveSeconds(days),0),
-        tNumSessions      = isn(computeNumSessions(days),0),
+        tTotalProfiles    = isn(computeTotalProfiles(control$profileCrDate,
+                                control$timeChunk),0),
+        tExistingProfiles = isn(computeExistingProfiles(control$profileCrDate,
+                                control$timeChunk),0),
+        tNewProfiles      = isn(computeNewProfiles(control$profileCrDate,
+                                control$timeChunk),0),
+        tTotalSeconds       = computeTotalSeconds(control$activity),
+        tActiveSeconds      = computeActiveSeconds(control$activity),
+        tNumSessions      = computeNumSessions(control$activity),
         tCrashes          = isn(computeTotalCrashes(days),0),
         tTotalSearch      = computeTotalSearches(control$searchcounts),
         tGoogleSearch     = countSearches(control$searchcounts,
@@ -338,6 +385,7 @@ summaries <- function(a,b){
         days           <- b$data$days [names(b$data$days)>=timeChunk['start'] & names(b$data$days)<= timeChunk['end']]
         bdim$timeStart <- timeChunk['start']
         bdim$timeEnd   <- timeChunk['end']
+        activity       <- getAllActivity(days)
         searchcounts   <- getAllSearches(days)
         ## Your custome code can be here (in statcomputer)
         mystats        <- PARAM$statcomputer(days, control=list(
@@ -345,6 +393,7 @@ summaries <- function(a,b){
             profileCrDate=profileCrDate, 
             granularity = PARAM$granularity, 
             timeChunk=timeChunk,
+            activity=activity,
             searchcounts = searchcounts,
             distribtype = bdim$distribtype)
         )
