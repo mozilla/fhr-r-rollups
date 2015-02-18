@@ -1,6 +1,4 @@
 
-### Time chunking ###
-
 winVerCheck <- function(ver,keepverforothers=FALSE){
     ## http://www.msigeek.com/442/windows-os-version-numbers
     keepverforothers=eval(keepverforothers)
@@ -23,6 +21,8 @@ isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0) subcode else s
 dayTimeChunk <- function(fr, to){
     lapply(strftime(seq(from=as.Date(fr),to=as.Date(to),by=1),"%Y-%m-%d"),function(s){ c(start=s, end=s)})
 }
+
+### Time chunking ###
 weekTimeChunk <- function(fr,to){
     ## Sunday is the first day of a week For example, 25 Dec 2013 was a Wednesday and hence belonged to the week
     ## starting Sunday 21st if 'fr' is not a sunday it will be rewinded to the Sunday it belongs if 'to' is not a
@@ -69,7 +69,7 @@ getDimensions <- function(b){
     osdetail <- local({
         if(os=="WINNT"){
             WNVer(b$data$last$org.mozilla.sysinfo.sysinfo$version)
-        }else "none"
+        }else os
     })
     distribution <- isn(b$data$last$org.mozilla.appInfo.appinfo$distributionID,
         "missing")
@@ -79,26 +79,6 @@ getDimensions <- function(b){
     
     list(vendor=vendor, name=name, channel=channel, os=os, osdetail=osdetail, 
         distribution=distribution, locale=locale, geo=geo, version=version)
-}
-
-## Summary or standardized values for profile info (for convenience). 
-## Pass in output of getDimensions.
-getStandardizedDimensions <- function(dims) {
-    isstdprofile <- isStandardProfile(dims$vendor, dims$name)
-    stdchannel <- getStandardChannel(dims$channel)
-    stdos <- getStandardOS(dims$os)
-    ## Identifier for the distribution group.
-    ## "mozilla" for standard Moz distributions,
-    ## <partnerID> for partner builds,
-    ## otherwise "other".
-    distribtype <- if(isMozillaDistrib(dims$distribution)) { 
-        "mozilla" 
-    } else { 
-        getPartnerName(dims$distribution) 
-    }
-    
-    list(isstdprofile=isstdprofile, stdchannel=stdchannel, stdos=stdos,
-        distribtype=distribtype)
 }
 
 ## Is the record considered a standard Firefox profile
@@ -151,6 +131,26 @@ getPartnerName <- function(distrib) {
     if(distrib %in% names(partner.list.expired))
         return(sprintf("%s|expired", partner.list.expired[[distrib]]))
     "other"
+}
+
+## Summary or standardized values for profile info (for convenience). 
+## Pass in output of getDimensions.
+getStandardizedDimensions <- function(dims) {
+    isstdprofile <- isStandardProfile(dims$vendor, dims$name)
+    stdchannel <- getStandardChannel(dims$channel)
+    stdos <- getStandardOS(dims$os)
+    ## Identifier for the distribution group.
+    ## "mozilla" for standard Moz distributions,
+    ## <partnerID> for partner builds,
+    ## otherwise "other".
+    distribtype <- if(isMozillaDistrib(dims$distribution)) { 
+        "mozilla" 
+    } else { 
+        getPartnerName(dims$distribution) 
+    }
+    
+    list(isstdprofile=isstdprofile, stdchannel=stdchannel, stdos=stdos,
+        distribtype=distribtype)
 }
 
 getProfileCreationDate <- function(b){
@@ -210,19 +210,6 @@ computeExistingProfiles <- function(profileCrDate,timeChunk) if(profileCrDate < 
 computeNewProfiles      <- function(profileCrDate,timeChunk) if(profileCrDate >= timeChunk['start'] && profileCrDate <= timeChunk['end']) 1 else 0
 ## Whether profile existed during time chunk.
 computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <= timeChunk['end']) 1 else 0
-# computeTotalSeconds     <- function(days)
-# {
-    # sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanTotalTime,dc$org.mozilla.appSessions.previous$abortedTotalTime)}))))
-# }
-# computeActiveSeconds    <- function(days)
-# {
-    # sum(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$cleanActiveTicks,dc$org.mozilla.appSessions.previous$abortedActiveTicks)}))))*5
-# }
-# computeNumSessions    <- function(days)
-# {
-    # length(unlist(Filter(function(s) s>=0,lapply(days, function(dc){ c(dc$org.mozilla.appSessions.previous$main) }))))
-# }
-
 ## Total time in seconds for sessions started during time chunk.
 computeTotalSeconds <- function(activity) {
     sum(unlist(lapply(activity, "[[", "totalSeconds")))
@@ -418,8 +405,8 @@ computeAllStats <- function(days,control){
                                 control$timeChunk),0),
         tNewProfiles      = isn(computeNewProfiles(control$profileCrDate,
                                 control$timeChunk),0),
-        tTotalSeconds       = computeTotalSeconds(control$activity),
-        tActiveSeconds      = computeActiveSeconds(control$activity),
+        tTotalSeconds     = computeTotalSeconds(control$activity),
+        tActiveSeconds    = computeActiveSeconds(control$activity),
         tNumSessions      = computeNumSessions(control$activity),
         tCrashes          = isn(computeTotalCrashes(days),0),
         tTotalSearch      = computeTotalSearches(control$searchcounts),
@@ -467,13 +454,13 @@ summaries <- function(a,b){
         bdim$timeEnd   <- timeChunk['end']
         ## Your custome code can be here (in statcomputer)
         mystats        <- PARAM$statcomputer(days, control=list(
-            jsObject=b,
-            profileCrDate=profileCrDate, 
-            granularity = PARAM$granularity, 
-            timeChunk=timeChunk,
-            activity=activity,
-            searchcounts = searchcounts,
-            distribtype = bdim$distribtype)
+            jsObject      = b,
+            profileCrDate = profileCrDate, 
+            granularity   = PARAM$granularity, 
+            timeChunk     = timeChunk,
+            activity      = activity,
+            searchcounts  = searchcounts,
+            distribtype   = bdim$distribtype)
         )
         if(PARAM$usedt){
             rhcollect(sample(1:1000,1), 
