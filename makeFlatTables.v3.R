@@ -439,9 +439,9 @@ summaries <- function(a,b){
     })
 }
 
-shared.files <- path.to.shared.R.data.files.on.hdfs
+shared.files <- "/user/dzeber/shared/"
 setup <- expression({
-    load(shared.file)
+    for(rd in rhls(shared.files)$file) load(rd)
 })
 
 
