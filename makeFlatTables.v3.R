@@ -1,3 +1,21 @@
+winVerCheck <- function(ver,keepverforothers=FALSE){
+    ## http://www.msigeek.com/442/windows-os-version-numbers
+    keepverforothers=eval(keepverforothers)
+    mu <- sapply(c("win7"="6.1","winVista"="6.0",'winXP'="(5.1|5.2)",'win8/Server2012' = "6.2"
+                   ,"win2K"="5.0","winMe"="4.9", "win98"="4.1","win95"="4.0","winNT"="3.5")
+                 ,function(r) sprintf("^(%s)",r))
+    mun <- names(mu)
+    id <- 1:length(mu)
+    return(function(s){
+        if(is.na(s) || is.null(s) || length(s)==0) return(NA)
+        for(i in id){
+            if(grepl(mu[i],s)) return(mun[i])
+        }
+        if(keepverforothers) return(sprintf("winOther_%s",s)) else ("winOthers")
+  })
+}
+WNVer <- winVerCheck(keepverforothers=TRUE)
+isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0) subcode else s
                                    
 dayTimeChunk <- function(fr, to){
     lapply(strftime(seq(from=as.Date(fr),to=as.Date(to),by=1),"%Y-%m-%d"),function(s){ c(start=s, end=s)})
@@ -124,7 +142,17 @@ getProfileCreationDate <- function(b){
     if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
     return(profileCrDate)
 }
-    
+
+computeIfProfileHasUp <- function(alldays, timeChunk,b){
+    ## Was the profile active in the 28 days before the beginning of the window and has UP?
+    upname <- "firefox.interest.dashboard@up.mozilla"
+    x <- if( (!is.null(b$data$last$org.mozilla.addons.addons) && upname %in% names(b$data$last$org.mozilla.addons.addons))
+            || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active))) 1 else 0
+    st1 <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
+    en1 <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
+    wasActive <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    return(1*(wasActive && x))
+}
 
 computeAllStats <- function(days,control){
     c(
@@ -141,7 +169,9 @@ computeAllStats <- function(days,control){
         tBingSearch       = isn(computeTotalBingSearches(days),0),
         tOthersSearch     = isn(computeTotalOthersSearches(days),0),
         tIsDefault        = isn(computeIsDefault(days),0),
-        t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0)
+        t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0),
+        tChurned          = isn(computeChurn(alldays = control$alldays, timeChunk=control$timeChunk),0)
+        tHasUP            = isn(computeIfProfileHasUp(alldays=control$alldays,timeChunk=control$timeChunk,b=control$jsObject),0)
         )
 }
     
@@ -161,7 +191,7 @@ summaries <- function(a,b){
             bdim$timeStart <- timeChunk['start']
             bdim$timeEnd   <- timeChunk['end']
             ## Your custome code can be here (in statcomputer)
-            mystats        <- PARAM$statcomputer(days, control=list(alldays = b$data$days,profileCrDate=profileCrDate
+            mystats        <- PARAM$statcomputer(days, control=list(jsObject=b,alldays = b$data$days,profileCrDate=profileCrDate
                                                            , granularity = PARAM$granularity, timeChunk=timeChunk))
             if(PARAM$usedt){
                 rhcollect(sample(1:1000,1), cbind( as.data.table( bdim), as.data.table(as.list(mystats)))) 
