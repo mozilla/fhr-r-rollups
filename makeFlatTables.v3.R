@@ -170,9 +170,9 @@ computeAllStats <- function(days,control){
         tBingSearch       = isn(computeTotalBingSearches(days),0),
         tOthersSearch     = isn(computeTotalOthersSearches(days),0),
         tIsDefault        = isn(computeIsDefault(days),0),
-        t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0),
-        tChurned          = isn(computeChurn(alldays = control$alldays, timeChunk=control$timeChunk),0)
-        tHasUP            = isn(computeIfProfileHasUp(alldays=control$alldays,timeChunk=control$timeChunk,b=control$jsObject),0)
+        t5outOf7          = isn(compute5outOf7(days, alldays = control$jsObject$data$days,granularity =control$granularity,timeChunk = control$timeChunk),0),
+        tChurned          = isn(computeChurn(alldays = control$jsObject$data$days, timeChunk=control$timeChunk),0)
+        tHasUP            = isn(computeIfProfileHasUp(alldays=control$jsObject$data$days,timeChunk=control$timeChunk,b=control$jsObject),0)
         )
 }
     
@@ -192,7 +192,7 @@ summaries <- function(a,b){
             bdim$timeStart <- timeChunk['start']
             bdim$timeEnd   <- timeChunk['end']
             ## Your custome code can be here (in statcomputer)
-            mystats        <- PARAM$statcomputer(days, control=list(jsObject=b,alldays = b$data$days,profileCrDate=profileCrDate
+            mystats        <- PARAM$statcomputer(days, control=list(jsObject=b,profileCrDate=profileCrDate
                                                            , granularity = PARAM$granularity, timeChunk=timeChunk))
             if(PARAM$usedt){
                 rhcollect(sample(1:1000,1), cbind( as.data.table( bdim), as.data.table(as.list(mystats)))) 
