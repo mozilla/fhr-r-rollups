@@ -89,14 +89,16 @@ isStandardProfile <- function(vendor, appname) {
 }
 
 ## Standard channel name, if the channel string is considered
-## to belong to one of the 4 main channels, or "other".
+## to belong to one of the 4 main channels or "esr", 
+## otherwise "other".
 getStandardChannel <- function(channel) {
     if(identical(channel, "missing")) return("other")
-    ## Release includes "release" and "esr".
-    if(grepl("^(release|esr(\\d{2})?)(-.+)?$", channel) return("release")
-    ## Prerelease.
-    chmatch <- regexpr("^(nightly|aurora|beta)(-.+)?$", channel)
-    if(chmatch < 0) "other" else regmatches(channel, chmatch)
+    stdchannel <- regmatches(channel, regexec(
+        "^(nightly|aurora|beta|release|esr(\\d{2})?)(-.+)?$", channel))[[1]]
+    if(length(stdchannel) == 0) return("other")
+    stdchannel <- stdchannel[[2]]
+    if(grepl("esr", stdchannel, fixed = TRUE)) return("esr")
+    stdchannel
 }
 
 ## Standard OS name - for convenience in reports.
@@ -119,12 +121,17 @@ isMozillaDistrib <- function(distrib) {
 }
 
 ## If the distribution is considered a partner build, find the partner name.
+## Distributions from expired partnerships get the suffix "|expired" appended.
 ## Otherwise, return "other".
-## partner.list is a lookup table mapping distribution IDs
-## to corresponding partner name.
+## partner.list.* is a lookup table mapping distribution IDs
+## to corresponding partner name,
+## for both current and expired partners. 
 getPartnerName <- function(distrib) {
-    if(!(distrib %in% names(partner.list))) return("other")
-    partner.list[[distrib]]
+    if(distrib %in% names(partner.list.current)) 
+        return(partner.list.current[[distrib]])
+    if(distrib %in% names(partner.list.expired))
+        return(sprintf("%s|expired", partner.list.expired[[distrib]])
+    "other"
 }
 
 
@@ -267,37 +274,62 @@ computeTotalSearches <- function(searches) {
 }
 
 ## Search providers to include for paid searches.
-searchNamesPaid <- function(distribtype) {
-    ## None on non-standard/non-partner distributions. 
-    switch(distribtype, other = NULL, mozilla = paid.plugins,
-        ## Default case is partner build.
-        ## Also count other-prefixed plugins relevant to that partner.
-        append(paid.plugins, sprintf("other-%s", partner.plugins[[distribtype]]))
+# searchNamesPaid <- function(distribtype) {
+    # None on non-standard/non-partner distributions. 
+    # switch(distribtype, other = NULL, mozilla = paid.plugins,
+        # Default case is partner build.
+        # Also count other-prefixed plugins relevant to that partner.
+        # append(paid.plugins, sprintf("other-%s", partner.plugins[[distribtype]]))
+# }
+
+## Plugin names to include for counting all searches 
+## through a given search provider.
+## Includes all relevant official plugin names, and any relevant 
+## other-prefixed shortnames on corresponding partner builds. 
+##
+## Arguments are the distribution type string for the current record,
+## an identifier for the official search plugins, 
+## and an identifier for partner builds.
+## The plugin identifier is considered a prefix to all relevant 
+## official plugin names (NULL means include all official plugins).
+## The partner identifier is the partner build whose other-prefixed
+## search names should be included (defaults to same as pluginprefix).
+searchNamesOfficialAndPartner <- function(distribtype, pluginprefix = NULL, 
+                                            partnername = pluginprefix) {
+    searchnames <- if(length(pluginprefix) == 0) { 
+        official.plugins 
+    } else {
+        patterns <- sprintf("^%s", pluginprefix)
+        unlist(lapply(patterns, grepl, official.plugins))
+    }
+    
+    if(length(partnername) > 0 && distribtype %in% partnername) {
+        searchnames <- append(searchnames, 
+            sprintf("other-%s", partner.plugins[[distribtype]])
+    }
+    searchnames
 }
 
-## Search providers to include for Google.
-searchNamesGoogle <- function() {
-    official.plugins[grepl("^google", official.plugins)]
+## Plugin names to count all searches through official default plugins and 
+## partner build defaults.
+searchNamesOfficial <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype)
 }
 
-## Search providers to include for Yahoo.
+## Plugin names to include for Google searches through official default plugins
+## and expired partner build defaults.
+searchNamesGoogle <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "google", "google|expired")
+}
+
+## Plugin names to include for Yahoo searches through official default plugins.
 searchNamesYahoo <- function(distribtype) {
-    searchnames <- official.plugins[grepl("^yahoo", official.plugins)]
-    if(identical(distribtype, "yahoo")) {
-        searchnames <- append(searchnames, 
-            sprintf("other-%s", partner.plugins[["yahoo"]]))
-    }
-    searchnames
+    searchNamesOfficialAndPartner(distribtype, "yahoo")
 }
 
-## Search providers to include for Bing.
+## Plugin names to include for Bing searches through official default plugins.
 searchNamesBing <- function(distribtype) {
-    searchnames <- official.plugins[grepl("^bing", official.plugins)]
-    if(identical(distribtype, "bing")) {
-        searchnames <- append(searchnames, 
-            sprintf("other-%s", partner.plugins[["bing"]])
-    }
-    searchnames
+    searchNamesOfficialAndPartner(distribtype, "bing")
 }
 
 #---------------------------------------
@@ -354,13 +386,13 @@ computeAllStats <- function(days,control){
         tCrashes          = isn(computeTotalCrashes(days),0),
         tTotalSearch      = computeTotalSearches(control$searchcounts),
         tGoogleSearch     = countSearches(control$searchcounts,
-                                searchNamesGoogle()),
+                                searchNamesGoogle(control$distribtype)),
         tYahooSearch      = countSearches(control$searchcounts,
                                 searchNamesYahoo(control$distribtype)),
         tBingSearch       = countSearches(control$searchcounts,
                                 searchNamesBing(control$distribtype)),
-        tPaidSearch       = countSearches(control$searchcounts,
-                                searchNamesPaid(control$distribtype)),
+        tOfficialSearch   = countSearches(control$searchcounts,
+                                searchNamesOfficial(control$distribtype)),
         tIsDefault        = isn(computeIsDefault(days),0),
         t5outOf7          = isn(compute5outOf7(days, alldays = control$alldays,granularity =control$granularity,timeChunk = control$timeChunk),0)
     )
