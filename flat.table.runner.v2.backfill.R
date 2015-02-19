@@ -1,9 +1,9 @@
-setwd("fhr-r-rollups")
+setwd("~/fhr-r-rollups")
 
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
-store.path <- "/user/sguha/fhraggr"
+store.path <- "/user/sguha/fhrrollup"
 
 
 extract.date <- function(s){
@@ -36,7 +36,7 @@ pathnames <- sort(rhls("/user/sguha/fhr/samples/backup")$file)
 BACK <- 170
 
 
-for( pi in seq_along(pathnames)){
+for( pi in rev(seq_along(pathnames))){
     p <- pathnames[pi]
     dt <- extract.date(p)
     fileOriginDate <- dt$date
@@ -81,6 +81,6 @@ for( pi in seq_along(pathnames)){
     ##                 ,setup=expression({ library(rjson) })
     ##                 ,read=FALSE
     ##                 ,param=list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
-    print(waitForJobs(p,i,length(pathnames),list(zweek, zmonth)))
+    print(waitForJobs(p,pi,length(pathnames),list(zweek, zmonth)))
 }
 email("ALL BACKFILLS DONE")

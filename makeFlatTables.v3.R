@@ -392,7 +392,7 @@ computeAllStats <- function(days,control){
                                                  searchNamesBing(control$distribtype)),
         tOfficialSearch                     = countSearches(control$searchcounts, searchNamesOfficial(control$distribtype)),
         tIsDefault                          = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
-        tIsActiveProfileDefault             = isn(computeIsActiveProfileDefault(days),0)
+        tIsActiveProfileDefault             = isn(computeIsActiveProfileDefault(days),0),
         t5outOf7                            = isn(compute5outOf7(days, 
                                                   alldays     = control$jsObject$data$days,
                                                   granularity = control$granularity,
@@ -412,7 +412,6 @@ computeAllStats <- function(days,control){
 summaries <- function(a,b){
     if(PARAM$needstobetagged){
         b <- fromJSON(b)
-        b$data$days <- tagDaysByBuildVersion(b)
     }
     bdim              <- getDimensions(b)
     bdim              <- append(bdim, getStandardizedDimensions(bdim))
