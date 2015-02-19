@@ -316,15 +316,16 @@ searchNamesBing <- function(distribtype) {
 ## Whether Fx was considered the default browser across the time chunk.
 ## If profile was inactive during the timechunk find their last status
 ## if it's still missing despite that, oh well - consider it as '0'
-computeIsDefault        <- function(days,alldays){
-    if(length(days) == 0){
-        previousDays <- as.numeric(unlist(lapply(alldays[names(alldays)<min(names(days))],function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser)))
+computeIsDefault        <- function(days,alldays,timeChunk){
+    if( length(days) == 0){
+        previousDays <- as.numeric(unlist(lapply(alldays[ names(alldays) < timeChunk['start'] ],function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser)))
         if(length(previousDays)==0) return(0)
         tail(na.locf(previousDays),1)
     }else{
         1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
     }
 }
+
 ## Whether the profile was active on 5 out of the last 7 days.
 compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     if(granularity=="day"){
@@ -369,8 +370,8 @@ computeIfProfileHasUp <- function(alldays, timeChunk,b){
             || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active)))
         1 else 0
     st1       <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
-    ed1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
-    wasActive <- any(names(alldays)>= st1 & names(alldays)<ed1)
+    ed1       <- strftime(as.Date(timeChunk['start']),"%Y-%m-%d")
+    wasActive <- any(names(alldays) >= st1 & names(alldays) <= ed1)
     return(1*(wasActive && x))
 }
 
@@ -387,7 +388,7 @@ computeAllStats <- function(days,control){
                                 control$timeChunk),0),
         tNewProfiles      = isn(computeNewProfiles(control$profileCrDate,
                                 control$timeChunk),0),
-        tActives          = isn(computeActives(days),0),
+        tActiveProfiles   = isn(computeActives(days),0),
         tTotalSeconds     = computeTotalSeconds(control$activity),
         tActiveSeconds    = computeActiveSeconds(control$activity),
         tNumSessions      = computeNumSessions(control$activity),
@@ -401,7 +402,7 @@ computeAllStats <- function(days,control){
                                 searchNamesBing(control$distribtype)),
         tOfficialSearch   = countSearches(control$searchcounts,
                                 searchNamesOfficial(control$distribtype)),
-        tIsDefault        = isn(computeIsDefault(days,alldays=control$jsObject$data$days),0),
+        tIsDefault        = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
         t5outOf7          = isn(compute5outOf7(days, 
                                 alldays = control$jsObject$data$days,
                                 granularity =control$granularity,
