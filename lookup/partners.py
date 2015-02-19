@@ -1,14 +1,43 @@
-# Download and parse latest list of partner distributions and search plugins.
+
+""" 
+Download and parse latest list of partner distributions and search plugins.
+Script expects 4 command-line arguments containing 4 output CSV file names:
+- table of full partner build info
+- table of partner build distribution IDs
+- table of partner build search plugins
+- table of Firefox official search plugins
+provided in that order.
+"""
 
 import urllib2
 from HTMLParser import HTMLParser
 import ConfigParser
 import codecs
 import json
+import sys
 from operator import itemgetter
 
 
-# Extract parnter info from packing configs.
+# Check that all output files are specified.
+if len(sys.argv) < 5:
+    sys.exit('Usage requires 4 command-line args that are output file names')
+
+# Table containing partner package information - 
+# distribution IDs and search default. 
+# output_package_info = 'full_partner_info.csv'
+(output_package_info
+# List of partner distrib ID strings by partner (set of unique IDs
+# based on both config files)
+# output_distrib_ids = 'partner_distrib_ids.csv'
+    output_distrib_ids,
+# List of partner search defaults.
+# output_distrib_search = 'partner_distrib_search.csv'
+    output_distrib_search,
+# Table of localized partner search strings.
+# output_all_search = 'official_search_plugins.csv'
+    output_all_search) = sys.argv[1:5]
+
+# Script extracts partner info from packing configs.
 # Create separate lists for current and expired partner builds. 
 partner_dirs = {
     'current': 'partners',
@@ -20,19 +49,11 @@ partner_packs_url  = 'https://hg.mozilla.org/build/partner-repacks/file/tip/'
 # Localization config containing search plugins. 
 spv_url = 'http://l10n.mozilla-community.org/~flod/p12n/searchplugins.json'
 
-# Table containing partner package information - 
-# distribution IDs and search default. 
-output_package_info = 'full_partner_info.csv'
-# List of partner distrib ID strings by partner (set of unique IDs
-# based on both config files)
-output_distrib_ids = 'partner_distrib_ids.csv'
-# List of partner search defaults.
-output_distrib_search = 'partner_distrib_search.csv'
-# Table of localized partner search strings.
-output_all_search = 'official_search_plugins.csv'
-    
 # Parse HTML from repo package dir page. 
 class PartnerListParser(HTMLParser):
+    """ Parser implementation to extract package subdir URLs 
+        from package dir page.
+    """
     
     # Map package names to their subdir URLs.
     # Pass in dirname containing partner build dirs.
