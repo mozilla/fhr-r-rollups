@@ -170,12 +170,16 @@ getAllActivity <- function(days) {
 
 ## Whether profile was active in time chunk.
 computeActives          <- function(days)    if(length(days)>0) 1 else 0
+
 ## Whether profile was created prior to time chunk.
 computeExistingProfiles <- function(profileCrDate,timeChunk) if(profileCrDate < timeChunk['start']) 1 else 0
+
 ## Whether profile was created during time chunk.
 computeNewProfiles      <- function(profileCrDate,timeChunk) if(profileCrDate >= timeChunk['start'] && profileCrDate <= timeChunk['end']) 1 else 0
+
 ## Whether profile existed during time chunk.
 computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <= timeChunk['end']) 1 else 0
+
 ## Total time in seconds for sessions started during time chunk.
 computeTotalSeconds <- function(activity) {
     sum(unlist(lapply(activity, "[[", "totalSeconds")))
@@ -281,24 +285,26 @@ searchNamesOfficialAndPartner <- function(distribtype, pluginprefix = NULL,
     searchnames
 }
 
-## Plugin names to count all searches through official default plugins and 
-## partner build defaults.
+## Plugin names to count all searches through official default plugins
+## and partner build defaults.
 searchNamesOfficial <- function(distribtype) {
     searchNamesOfficialAndPartner(distribtype)
 }
 
-## Plugin names to include for Google searches through official default plugins
-## and expired partner build defaults.
+## Plugin names to include for Google searches through official
+## default plugins and expired partner build defaults.
 searchNamesGoogle <- function(distribtype) {
     searchNamesOfficialAndPartner(distribtype, "google", "google|expired")
 }
 
-## Plugin names to include for Yahoo searches through official default plugins.
+## Plugin names to include for Yahoo searches through official default
+## plugins.
 searchNamesYahoo <- function(distribtype) {
     searchNamesOfficialAndPartner(distribtype, "yahoo")
 }
 
-## Plugin names to include for Bing searches through official default plugins.
+## Plugin names to include for Bing searches through official default
+## plugins.
 searchNamesBing <- function(distribtype) {
     searchNamesOfficialAndPartner(distribtype, "bing")
 }
@@ -308,7 +314,17 @@ searchNamesBing <- function(distribtype) {
 ### Other stats ###
 
 ## Whether Fx was considered the default browser across the time chunk.
-computeIsDefault        <- function(days) 1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
+## If profile was inactive during the timechunk find their last status
+## if it's still missing despite that, oh well - consider it as '0'
+computeIsDefault        <- function(days,alldays){
+    if(length(days) == 0){
+        previousDays <- as.numeric(unlist(lapply(alldays[names(alldays)<min(names(days))],function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser)))
+        if(length(previousDays)==0) return(0)
+        tail(na.locf(previousDays),1)
+    }else{
+        1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
+    }
+}
 ## Whether the profile was active on 5 out of the last 7 days.
 compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     if(granularity=="day"){
@@ -328,10 +344,10 @@ computeChurn1           <- function(alldays,timeChunk){
     ## This hardly means those profiles have gone away, many do come back.
     st1 <- strftime(as.Date(timeChunk['start'])-14,"%Y-%m-%d")
     ed1 <- timeChunk['start']
-    wasActiveLast14Days <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    wasActiveLast14Days <- any(names(alldays)>= st1 & names(alldays)<ed1)
     st1 <- strftime(as.Date(timeChunk['start'])-30,"%Y-%m-%d")
     ed1 <- strftime(as.Date(timeChunk['start'])-15,"%Y-%m-%d")
-    wasActivePrev14Days <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    wasActivePrev14Days <- any(names(alldays)>= st1 & names(alldays)<ed1)
     1*(wasActiveLast14Days==FALSE && wasActivePrev14Days==TRUE)
 }
 computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
@@ -345,15 +361,16 @@ getProfileCreationDate  <- function(b){
     return(profileCrDate)
 }
 
+
+        ## Was the profile active in the 28 days before the beginning of the window and has UP?
 computeIfProfileHasUp <- function(alldays, timeChunk,b){
-    ## Was the profile active in the 28 days before the beginning of the window and has UP?
     upname    <- "firefox.interest.dashboard@up.mozilla"
     x <- if( (!is.null(b$data$last$org.mozilla.addons.addons) && upname %in% names(b$data$last$org.mozilla.addons.addons))
             || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active)))
         1 else 0
     st1       <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
     ed1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
-    wasActive <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
+    wasActive <- any(names(alldays)>= st1 & names(alldays)<ed1)
     return(1*(wasActive && x))
 }
 
@@ -364,13 +381,13 @@ computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c
 ## Each of these stats will be added up within segments. 
 computeAllStats <- function(days,control){
     c(
-        tActives          = isn(computeActives(days),0),
         tTotalProfiles    = isn(computeTotalProfiles(control$profileCrDate,
                                 control$timeChunk),0),
         tExistingProfiles = isn(computeExistingProfiles(control$profileCrDate,
                                 control$timeChunk),0),
         tNewProfiles      = isn(computeNewProfiles(control$profileCrDate,
                                 control$timeChunk),0),
+        tActives          = isn(computeActives(days),0),
         tTotalSeconds     = computeTotalSeconds(control$activity),
         tActiveSeconds    = computeActiveSeconds(control$activity),
         tNumSessions      = computeNumSessions(control$activity),
@@ -384,7 +401,7 @@ computeAllStats <- function(days,control){
                                 searchNamesBing(control$distribtype)),
         tOfficialSearch   = countSearches(control$searchcounts,
                                 searchNamesOfficial(control$distribtype)),
-        tIsDefault        = isn(computeIsDefault(days),0),
+        tIsDefault        = isn(computeIsDefault(days,alldays=control$jsObject$data$days),0),
         t5outOf7          = isn(compute5outOf7(days, 
                                 alldays = control$jsObject$data$days,
                                 granularity =control$granularity,
@@ -420,7 +437,7 @@ summaries <- function(a,b){
         bdim$timeEnd   <- timeChunk['end']
         ## Your custome code can be here (in statcomputer)
         activity       <- getAllActivity(days)
-        searchcounts         <- getAllSearches(days)
+        searchcounts   <- getAllSearches(days)
         mystats        <- PARAM$statcomputer(days, control=list(
             jsObject      = b,
             profileCrDate = profileCrDate, 
@@ -440,26 +457,13 @@ summaries <- function(a,b){
 }
 
 shared.files <- "/user/dzeber/shared/partner-search-lookup.RData"
-setup <- expression({
+setup <- expression(map={
+    suppressPackageStartupMessages(library(data.table))
     load("partner-search-lookup.RData")
 })
 
 
      
-################################################################################
-## Examples
-################################################################################
-timeperiod <- list(start = strftime(Sys.Date()-30,"%Y-%m-%d"), end   = strftime(Sys.Date()-7,"%Y-%m-%d"))
-PARAM <- list(needstobetagged=FALSE,whichdate=strftime(Sys.Date(),"%Y%m%d"), granularity='week'
-              ,listOfTimeChunks = weekTimeChunk(timeperiod$start, timeperiod$end),statcomputer=computeAllStats,usedt=FALSE)
-
-## z <- rhwatch(map=summaries, reduce=rhoptions()$temp$colsummer, input="/user/sguha/fhr/samples/output/fromjson1pct"
-##              ,debug='collect'
-##              ,output='testnew'
-##              ,setup=expression({suppressPackageStartupMessages(library(data.table))})
-##              ,param=list(PARAM=PARAM))
-
-## z2 <- make.dt(z,c(names(z[[1]][[1]]),names(z[[1]][[2]])))
 
 
 
