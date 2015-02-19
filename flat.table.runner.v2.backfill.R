@@ -1,6 +1,6 @@
 setwd("fhr-r-rollups")
 
-source("sguha.functions.R")
+source("lib/sguha.functions.R")
 source("makeFlatTables.v3.R")
 
 store.path <- "/user/sguha/fhraggr"

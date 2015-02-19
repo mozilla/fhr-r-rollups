@@ -63,7 +63,7 @@ getDimensions <- function(b){
 ## Is the record considered a standard Firefox profile
 ## (ie should be included in the set of "all Firefox profiles".
 isStandardProfile <- function(vendor, appname) {
-    identical(vendor, "Mozilla") && identical(appname, "Firefox")
+    as.character(identical(vendor, "Mozilla") && identical(appname, "Firefox"))
 }
 
 ## Standard channel name, if the channel string is considered
@@ -352,7 +352,7 @@ computeIfProfileHasUp <- function(alldays, timeChunk,b){
             || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active)))
         1 else 0
     st1       <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
-    en1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
+    ed1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
     wasActive <- any(names(alldays$data$days)>= st1 & names(alldays$data$days)<ed1)
     return(1*(wasActive && x))
 }
@@ -391,7 +391,7 @@ computeAllStats <- function(days,control){
                                 timeChunk = control$timeChunk),0),
         tChurned          = isn(computeChurn(
                                 alldays = control$jsObject$data$days, 
-                                timeChunk=control$timeChunk),0)
+                                timeChunk=control$timeChunk),0),
         tHasUP            = isn(computeIfProfileHasUp(
                                 alldays=control$jsObject$data$days,
                                 timeChunk=control$timeChunk,
@@ -420,7 +420,7 @@ summaries <- function(a,b){
         bdim$timeEnd   <- timeChunk['end']
         ## Your custome code can be here (in statcomputer)
         activity       <- getAllActivity(days)
-        search         <- getAllSearches(days)
+        searchcounts         <- getAllSearches(days)
         mystats        <- PARAM$statcomputer(days, control=list(
             jsObject      = b,
             profileCrDate = profileCrDate, 
@@ -439,9 +439,9 @@ summaries <- function(a,b){
     })
 }
 
-shared.files <- "/user/dzeber/shared/"
+shared.files <- "/user/dzeber/shared/partner-search-lookup.RData"
 setup <- expression({
-    for(rd in rhls(shared.files)$file) load(rd)
+    load("partner-search-lookup.RData")
 })
 
 
@@ -449,9 +449,9 @@ setup <- expression({
 ################################################################################
 ## Examples
 ################################################################################
-
-## PARAM <- list(needstobetagged=FALSE,whichdate=strftime(Sys.Date(),"%Y%m%d"), granularity='week'
-##               ,listOfTimeChunks = weekTimeChunk(timeperiod$start, timeperiod$end),statcomputer=computeAllStats,usedt=FALSE)
+timeperiod <- list(start = strftime(Sys.Date()-30,"%Y-%m-%d"), end   = strftime(Sys.Date()-7,"%Y-%m-%d"))
+PARAM <- list(needstobetagged=FALSE,whichdate=strftime(Sys.Date(),"%Y%m%d"), granularity='week'
+              ,listOfTimeChunks = weekTimeChunk(timeperiod$start, timeperiod$end),statcomputer=computeAllStats,usedt=FALSE)
 
 ## z <- rhwatch(map=summaries, reduce=rhoptions()$temp$colsummer, input="/user/sguha/fhr/samples/output/fromjson1pct"
 ##              ,debug='collect'
