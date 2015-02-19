@@ -413,6 +413,7 @@ computeAllStats <- function(days,control){
                                                  alldays     = control$jsObject$data$days,
                                                  granularity = control$granularity,
                                                  timeChunk   = control$timeChunk),0),
+                                                  alldays     = control$jsObject$data$days,
         tChurned                            = isn(computeChurn(alldays     = control$jsObject$data$days, 
                                                                timeChunk   = control$timeChunk),0),
         tHasUP                              = isn(computeIfProfileHasUp(alldays     = control$jsObject$data$days,
