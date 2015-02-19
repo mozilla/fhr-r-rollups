@@ -358,17 +358,7 @@ computeChurn1           <- function(alldays,timeChunk){
 }
 computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
 
-getProfileCreationDate  <- function(b){
-    profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
-    if(is.null(profileCrDate)) {
-        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
-    }
-    if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
-    return(profileCrDate)
-}
-
-
-        ## Was the profile active in the 28 days before the beginning of the window and has UP?
+## Was the profile active in the 28 days before the beginning of the window and has UP?
 computeIfProfileHasUp <- function(alldays, timeChunk,b){
     upname    <- "firefox.interest.dashboard@up.mozilla"
     x <- if( (!is.null(b$data$last$org.mozilla.addons.addons) && upname %in% names(b$data$last$org.mozilla.addons.addons))
@@ -387,33 +377,26 @@ computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c
 ## Each of these stats will be added up within segments. 
 computeAllStats <- function(days,control){
     c(
-        tTotalProfiles                      = isn(computeTotalProfiles(control$profileCrDate,
-                                                                       control$timeChunk),0),
-        tExistingProfiles                   = isn(computeExistingProfiles(control$profileCrDate,
-                                                                          control$timeChunk),0),
-        tNewProfiles                        = isn(computeNewProfiles(control$profileCrDate,
-                                                                     control$timeChunk),0),
+        tTotalProfiles                      = isn(computeTotalProfiles(control$profileCrDate, control$timeChunk),0),
+        tExistingProfiles                   = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
+        tNewProfiles                        = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
         tActiveProfiles                     = isn(computeActives(days),0),
         tTotalSeconds                       = computeTotalSeconds(control$activity),
         tActiveSeconds                      = computeActiveSeconds(control$activity),
         tNumSessions                        = computeNumSessions(control$activity),
         tCrashes                            = isn(computeTotalCrashes(days),0),
         tTotalSearch                        = computeTotalSearches(control$searchcounts),
-        tGoogleSearch                       = countSearches(control$searchcounts,
-                                                            searchNamesGoogle(control$distribtype)),
-        tYahooSearch                        = countSearches(control$searchcounts,
-                                                            searchNamesYahoo(control$distribtype)),
+        tGoogleSearch                       = countSearches(control$searchcounts, searchNamesGoogle(control$distribtype)),
+        tYahooSearch                        = countSearches(control$searchcounts, searchNamesYahoo(control$distribtype)),
         tBingSearch                         = countSearches(control$searchcounts,
                                                  searchNamesBing(control$distribtype)),
-        tOfficialSearch                     = countSearches(control$searchcounts,
-                                                            searchNamesOfficial(control$distribtype)),
+        tOfficialSearch                     = countSearches(control$searchcounts, searchNamesOfficial(control$distribtype)),
         tIsDefault                          = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
         tIsActiveProfileDefault             = isn(computeIsActiveProfileDefault(days),0)
         t5outOf7                            = isn(compute5outOf7(days, 
-                                                 alldays     = control$jsObject$data$days,
-                                                 granularity = control$granularity,
-                                                 timeChunk   = control$timeChunk),0),
                                                   alldays     = control$jsObject$data$days,
+                                                  granularity = control$granularity,
+                                                  timeChunk   = control$timeChunk),0),
         tChurned                            = isn(computeChurn(alldays     = control$jsObject$data$days, 
                                                                timeChunk   = control$timeChunk),0),
         tHasUP                              = isn(computeIfProfileHasUp(alldays     = control$jsObject$data$days,
