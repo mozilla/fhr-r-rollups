@@ -275,7 +275,7 @@ searchNamesOfficialAndPartner <- function(distribtype, pluginprefix = NULL,
         official.plugins 
     } else {
         patterns <- sprintf("^%s", pluginprefix)
-        unlist(lapply(patterns, grepl, official.plugins))
+        unlist(lapply(patterns, grep, official.plugins, value = TRUE))
     }
     
     if(length(partnername) > 0 && distribtype %in% partnername) {
