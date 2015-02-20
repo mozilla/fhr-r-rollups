@@ -17,7 +17,7 @@ files <- commandArgs(TRUE)
 ## Identify expired partner builds with the suffix "|expired".
 partner.ids <- as.data.table(read.csv(files[1], stringsAsFactors = FALSE))
 partner.ids[type == "expired", partner := sprintf("%s|expired", partner)]
-partner.list <- partner.ids[setNames(partner, distrib_id)]
+partner.list <- partner.ids[, setNames(partner, distrib_id)]
 
 ## Partner search plugins.
 partner.plugins <- as.data.table(read.csv(files[2], stringsAsFactors = FALSE))
@@ -27,9 +27,6 @@ partner.plugins <- split(partner.plugins$search_name, partner.plugins$partner)
 ## All official search plugins.
 official.plugins <- read.csv(files[3], stringsAsFactors = FALSE)[, "plugin_id"]
 
-save(partner.list.current, 
-        partner.list.expired, 
-        partner.plugins,
-        official.plugins, 
+save(partner.list, partner.plugins, official.plugins, 
     file = files[4])   
    
