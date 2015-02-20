@@ -1,3 +1,4 @@
+library(zoo)
 dayTimeChunk <- function(fr, to){
     lapply(strftime(seq(from=as.Date(fr),to=as.Date(to),by=1),"%Y-%m-%d"),function(s){ c(start=s, end=s)})
 }
@@ -14,7 +15,6 @@ weekTimeChunk <- function(fr,to){
 }
 
 monthTimeChunk <- function(fr,to){
-    require(zoo)
     ## round 'fr' down to beginning of month and
     ## round 'to' to beginning of the month
     fr1 <- as.Date(as.yearmon(fr, "%Y-%m-%d"), frac = 0)
@@ -320,7 +320,7 @@ computeIsDefault        <- function(days,alldays,timeChunk){
     if( length(days) == 0){
         previousDays <- as.numeric(unlist(lapply(alldays[ names(alldays) < timeChunk['start'] ],function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser)))
         if(length(previousDays)==0) return(0)
-        tail(na.locf(previousDays),1)
+        tail(previousDays,1)
     }else{
         1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
     }
@@ -447,6 +447,7 @@ summaries <- function(a,b){
 shared.files <- "/user/dzeber/shared/partner-search-lookup.RData"
 setup <- expression(map={
     suppressPackageStartupMessages(library(data.table))
+    library(rjson)
     load("partner-search-lookup.RData")
 })
 

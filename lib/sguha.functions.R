@@ -29,3 +29,35 @@ getProfileCreationDate <- function(b){
     if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
     return(profileCrDate)
 }
+           
+## parseJobId In future version of RHIPE and Hadoop MR2 this will be
+## removed, it is hack which isnt robust to Hadoop versions
+parseJobIDFromTrackingURL <- function(job){
+    ## replace with parseJobIDFromTracking
+    x <- gregexpr("jobid=", job[[1]]$tracking)
+    st <- x[[1]] + attr(x[[1]], "match.length")
+    substring(job[[1]]$tracking, st, 1000000L)
+}
+
+## This code monitors errors during the map phase and if the % of
+## errors is greater than pctcut aborts the job and saves the status
+## counter in errorvar
+jobHandler <- function(y,pctcut=2,errorVar="jobErrorVar"){
+    pctcut <- eval(pctcut)
+    return(function(y){
+        mapinputrecords <- tryCatch(as.numeric(y$counters$"Map-Reduce Framework"["Map input records",]),error=function(e) NULL)
+        rerrors <- y$counters$R_UNTRAPPED_ERRORS
+        rvalue <- TRUE
+        if(!is.null(mapinputrecords) && !is.null(rerrors) && nrow(rerrors)>0){
+            z <- data.table(errors=rownames(rerrors), n=as.numeric(rerrors[,1]), pct = round(as.numeric(rerrors[,1]/mapinputrecords)*100,2))
+            if(any(z$pct>pctcut)){
+                J <- list(z,y)
+                assign(errorVar,J,.GlobalEnv)
+                message(sprintf("Handler is Killing %s",y$tracking))
+                rhkill(parseJobIDFromTrackingURL(list(y)))
+                rvalue <- FALSE
+            }
+        }
+        rvalue
+    })
+}
