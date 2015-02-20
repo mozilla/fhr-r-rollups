@@ -14,11 +14,10 @@ files <- commandArgs(TRUE)
 
 ## Current and expired partner IDs.
 ## Lookup table is stored as named vector.
+## Identify expired partner builds with the suffix "|expired".
 partner.ids <- as.data.table(read.csv(files[1], stringsAsFactors = FALSE))
-partner.list.current <- partner.ids[type == "current", 
-    setNames(partner, distrib_id)]
-partner.list.expired <- partner.ids[type == "expired", 
-    setNames(partner, distrib_id)]
+partner.ids[type == "expired", partner := sprintf("%s|expired", partner)]
+partner.list <- partner.ids[setNames(partner, distrib_id)]
 
 ## Partner search plugins.
 partner.plugins <- as.data.table(read.csv(files[2], stringsAsFactors = FALSE))
