@@ -22,9 +22,11 @@
 ##  
 #######################################################################
 
+. ~/.bash_profile
 
 # Base dir for the script output.
 OUTPUT_DIR="$HOME/fhr-lookup"
+[[ -d $OUTPUT_DIR ]] || mkdir $OUTPUT_DIR
 # Log file.
 OUTPUT_LOG="$OUTPUT_DIR/generate_lookup_tables.log"
 
@@ -48,13 +50,14 @@ DISTRIB_SEARCH_TABLE="$OUTPUT_DIR/partner_distrib_search.csv"
 ALL_SEARCH_PLUGINS="$OUTPUT_DIR/official_search_plugins.csv"
 
 ## RData file name to contain lookup objects.
-LOOKUP_RDATA="$OUTPUT_DIR/partner-search-lookup.RData"
+LOOKUP_RDATA_BASENAME="partner-search-lookup.RData"
+LOOKUP_RDATA="$OUTPUT_DIR/$LOOKUP_RDATA_BASENAME"
 
 # Shared locations:
-# Web
-SHARED_WEB_LOCATION="$APP1:\$REF"
+# Web - location is pulled from env variable in local profile.
+SHARED_WEB_LOCATION="$APP1_REF"
 # HDFS
-SHARED_HDFS_LOCATION="${HOME/home/user/}/shared"
+SHARED_HDFS_LOCATION="${HOME/home/user}/shared"
 
 echo "Running lookup table generation:  `date`"
 
@@ -84,14 +87,16 @@ if [[ $? != 0 ]]; then
 fi
 echo "Done."
 
-## Copy to app1
-chmod 744 $OUTPUT_DIR/*.csv
-scp $OUTPUT_DIR/*.csv $SHARED_WEB_LOCATION && \
-    echo "Copied CSVs to app1."
+## Copy to app1.
+chmod 644 $OUTPUT_DIR/*.csv
+[[ -z $SHARED_WEB_LOCATION ]] || \
+    (scp $OUTPUT_DIR/*.csv $SHARED_WEB_LOCATION && \
+    echo "Copied CSVs to app1.")
 
 ## Copy to HDFS.
 chmod 755 $LOOKUP_RDATA
-hadoop dfs -copyFromLocal $LOOKUP_RDATA $SHARED_HDFS_LOCATION && \
+hadoop dfs -copyFromLocal $LOOKUP_RDATA \
+    "$SHARED_HDFS_LOCATION/$LOOKUP_RDATA_BASENAME" && \
     echo "Copied RData to HDFS."
     
 echo "Lookup table generation completed: `date`"
