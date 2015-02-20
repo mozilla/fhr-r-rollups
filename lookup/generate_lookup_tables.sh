@@ -73,7 +73,11 @@ echo "Done."
 
 ## Generate RData.
 echo "Generating RData..."
-# Rscript...
+Rscript --vanilla package-lookups.R \
+    $DISTRIB_IDS_TABLE \
+    $DISTRIB_SEARCH_TABLE \
+    $ALL_SEARCH_PLUGINS \
+    $LOOKUP_RDATA
 if [[ $? != 0 ]]; then
     echo "There was an error generating RData. Exiting..."
     exit 1
@@ -81,11 +85,12 @@ fi
 echo "Done."
 
 ## Copy to app1
-chmod 755 $OUTPUT_DIR/*.csv
+chmod 744 $OUTPUT_DIR/*.csv
 scp $OUTPUT_DIR/*.csv $SHARED_WEB_LOCATION && \
     echo "Copied CSVs to app1."
 
 ## Copy to HDFS.
+chmod 755 $LOOKUP_RDATA
 hadoop dfs -copyFromLocal $LOOKUP_RDATA $SHARED_HDFS_LOCATION && \
     echo "Copied RData to HDFS."
     
