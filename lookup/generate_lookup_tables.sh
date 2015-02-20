@@ -60,11 +60,11 @@ echo "Running lookup table generation:  `date`"
 
 ## Generate CSV files.
 echo "Generating CSV files..."
-# python partners.py \
-    # $FULL_DISTRIB_INFO \
-    # $DISTRIB_IDS_TABLE \
-    # $DISTRIB_SEARCH_TABLE \
-    # $ALL_SEARCH_PLUGINS
+python partners.py \
+    $FULL_DISTRIB_INFO \
+    $DISTRIB_IDS_TABLE \
+    $DISTRIB_SEARCH_TABLE \
+    $ALL_SEARCH_PLUGINS
 if [[ $? != 0 ]]; then
     echo "There was an error generating CSV files. Exiting..."
     exit 1
