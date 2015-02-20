@@ -313,15 +313,21 @@ searchNamesBing <- function(distribtype) {
 ## Whether Fx was considered the default browser across the time chunk.
 ## If profile was inactive during the timechunk find their last status
 ## if it's still missing despite that, oh well - consider it as '0'
-computeIsDefault        <- function(days,alldays){
-    if(length(days) == 0){
-        previousDays <- as.numeric(unlist(lapply(alldays[names(alldays)<min(names(days))],function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser)))
+computeIsDefault        <- function(days,alldays,timeChunk){
+    if( length(days) == 0){
+        previousDays <- as.numeric(unlist(lapply(alldays[ names(alldays) < timeChunk['start'] ],function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser)))
         if(length(previousDays)==0) return(0)
         tail(na.locf(previousDays),1)
     }else{
         1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
     }
 }
+
+##  Computes if the active profile is default
+computeIsActiveProfileDefault    <- function(days){
+        1*(sum(unlist(lapply(days,function(s) s$org.mozilla.appInfo.appinfo$isDefaultBrowser))) > 0.5*length(days))
+}
+
 ## Whether the profile was active on 5 out of the last 7 days.
 compute5outOf7          <- function(days,alldays,granularity,timeChunk){
     if(granularity=="day"){
@@ -349,25 +355,15 @@ computeChurn1           <- function(alldays,timeChunk){
 }
 computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
 
-getProfileCreationDate  <- function(b){
-    profileCrDate     <- strftime(  as.Date(b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), "%Y-%m-%d")
-    if(is.null(profileCrDate)) {
-        profileCrDate <- if(length(b$data$days) > 0) min(names(b$data$days)) else b$thisPingDate
-    }
-    if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
-    return(profileCrDate)
-}
-
-
-        ## Was the profile active in the 28 days before the beginning of the window and has UP?
+## Was the profile active in the 28 days before the beginning of the window and has UP?
 computeIfProfileHasUp <- function(alldays, timeChunk,b){
     upname    <- "firefox.interest.dashboard@up.mozilla"
     x <- if( (!is.null(b$data$last$org.mozilla.addons.addons) && upname %in% names(b$data$last$org.mozilla.addons.addons))
             || (!is.null(b$data$last$org.mozilla.addons.active) && upname %in% names(b$data$last$org.mozilla.addons.active)))
         1 else 0
     st1       <- strftime(as.Date(timeChunk['start'])-28,"%Y-%m-%d")
-    ed1       <- strftime(as.Date(timeChunk['start'])-1,"%Y-%m-%d")
-    wasActive <- any(names(alldays)>= st1 & names(alldays)<ed1)
+    ed1       <- strftime(as.Date(timeChunk['start']),"%Y-%m-%d")
+    wasActive <- any(names(alldays) >= st1 & names(alldays) <= ed1)
     return(1*(wasActive && x))
 }
 
@@ -378,39 +374,32 @@ computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c
 ## Each of these stats will be added up within segments. 
 computeAllStats <- function(days,control){
     c(
-        tTotalProfiles    = isn(computeTotalProfiles(control$profileCrDate,
-                                control$timeChunk),0),
-        tExistingProfiles = isn(computeExistingProfiles(control$profileCrDate,
-                                control$timeChunk),0),
-        tNewProfiles      = isn(computeNewProfiles(control$profileCrDate,
-                                control$timeChunk),0),
-        tActives          = isn(computeActives(days),0),
-        tTotalSeconds     = computeTotalSeconds(control$activity),
-        tActiveSeconds    = computeActiveSeconds(control$activity),
-        tNumSessions      = computeNumSessions(control$activity),
-        tCrashes          = isn(computeTotalCrashes(days),0),
-        tTotalSearch      = computeTotalSearches(control$searchcounts),
-        tGoogleSearch     = countSearches(control$searchcounts,
-                                searchNamesGoogle(control$distribtype)),
-        tYahooSearch      = countSearches(control$searchcounts,
-                                searchNamesYahoo(control$distribtype)),
-        tBingSearch       = countSearches(control$searchcounts,
-                                searchNamesBing(control$distribtype)),
-        tOfficialSearch   = countSearches(control$searchcounts,
-                                searchNamesOfficial(control$distribtype)),
-        tIsDefault        = isn(computeIsDefault(days,alldays=control$jsObject$data$days),0),
-        t5outOf7          = isn(compute5outOf7(days, 
-                                alldays = control$jsObject$data$days,
-                                granularity =control$granularity,
-                                timeChunk = control$timeChunk),0),
-        tChurned          = isn(computeChurn(
-                                alldays = control$jsObject$data$days, 
-                                timeChunk=control$timeChunk),0),
-        tHasUP            = isn(computeIfProfileHasUp(
-                                alldays=control$jsObject$data$days,
-                                timeChunk=control$timeChunk,
-                                b=control$jsObject),0)
-    )
+        tTotalProfiles                      = isn(computeTotalProfiles(control$profileCrDate, control$timeChunk),0),
+        tExistingProfiles                   = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
+        tNewProfiles                        = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
+        tActiveProfiles                     = isn(computeActives(days),0),
+        tTotalSeconds                       = computeTotalSeconds(control$activity),
+        tActiveSeconds                      = computeActiveSeconds(control$activity),
+        tNumSessions                        = computeNumSessions(control$activity),
+        tCrashes                            = isn(computeTotalCrashes(days),0),
+        tTotalSearch                        = computeTotalSearches(control$searchcounts),
+        tGoogleSearch                       = countSearches(control$searchcounts, searchNamesGoogle(control$distribtype)),
+        tYahooSearch                        = countSearches(control$searchcounts, searchNamesYahoo(control$distribtype)),
+        tBingSearch                         = countSearches(control$searchcounts,
+                                                 searchNamesBing(control$distribtype)),
+        tOfficialSearch                     = countSearches(control$searchcounts, searchNamesOfficial(control$distribtype)),
+        tIsDefault                          = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
+        tIsActiveProfileDefault             = isn(computeIsActiveProfileDefault(days),0),
+        t5outOf7                            = isn(compute5outOf7(days, 
+                                                  alldays     = control$jsObject$data$days,
+                                                  granularity = control$granularity,
+                                                  timeChunk   = control$timeChunk),0),
+        tChurned                            = isn(computeChurn(alldays     = control$jsObject$data$days, 
+                                                               timeChunk   = control$timeChunk),0),
+        tHasUP                              = isn(computeIfProfileHasUp(alldays     = control$jsObject$data$days,
+                                                                        timeChunk   = control$timeChunk,
+                                                                        b           = control$jsObject),0)
+        )
 }
     
 #---------------------------------------
@@ -420,7 +409,6 @@ computeAllStats <- function(days,control){
 summaries <- function(a,b){
     if(PARAM$needstobetagged){
         b <- fromJSON(b)
-        b$data$days <- tagDaysByBuildVersion(b)
     }
     bdim              <- getDimensions(b)
     bdim              <- append(bdim, getStandardizedDimensions(bdim))

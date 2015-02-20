@@ -5,7 +5,7 @@ setwd("~/fhr-r-rollups")
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
-timeperiod <- list(start = strftime(Sys.Date()-30,"%Y-%m-%d"), end   = strftime(Sys.Date()-7,"%Y-%m-%d"))
+timeperiod <- list(start = strftime(Sys.Date()-30,"%Y-%m-%d"), end   = strftime(Sys.Date()-21,"%Y-%m-%d"))
 PARAM <- list(needstobetagged=FALSE,whichdate=strftime(Sys.Date(),"%Y%m%d"), granularity='week'
               ,listOfTimeChunks = weekTimeChunk(timeperiod$start, timeperiod$end),statcomputer=computeAllStats,usedt=FALSE)
 
@@ -17,7 +17,7 @@ z <- rhwatch(map     = summaries, reduce=rhoptions()$temp$colsummer, input="/use
              ,shared = shared.files)
 z2 <- make.dt(z,c(names(z[[1]][[1]]),names(z[[1]][[2]])))
 
-(z3 <- z2[name=='Firefox', list(tActives=sum(tActives), tTotalProfiles = sum(tTotalProfiles), tExistingProfiles=sum(tExistingProfiles),
+(z3 <- z2[name=='Firefox', list(tActives=sum(tActiveProfiles), tTotalProfiles = sum(tTotalProfiles), tExistingProfiles=sum(tExistingProfiles),
        tNewProfiles=sum(tNewProfiles), tTotalSeconds=sum(tTotalSeconds), tActiveSeconds=sum(tActiveSeconds), tNumSessions=sum(tNumSessions),
        tCrashes=sum(tCrashes), tTotalSearch=sum(tTotalSearch), tIsDefault=sum(tIsDefault), t5outOf7=sum(t5outOf7), tChurned=sum(tChurned), tHasUP=sum(tHasUP)),by=timeStart][order(timeStart),])
 
