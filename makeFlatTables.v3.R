@@ -444,8 +444,7 @@ summaries <- function(a,b){
 shared.files <- "/user/dzeber/shared/partner-search-lookup.RData"
 setup <- expression(map={
     suppressPackageStartupMessages(library(data.table))
-    # load("partner-search-lookup.RData")
-    load(shared.files)
+    load("partner-search-lookup.RData")
 })
 
 
