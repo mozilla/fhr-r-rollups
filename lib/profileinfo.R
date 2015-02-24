@@ -63,6 +63,7 @@ majorDistribValue <- function(distrib) {
         grepl("mozilla", distrib, ignore.case = TRUE)) return("mozilla")
     ## To identify partner builds, look up distribution ID in table.
     if(distrib %in% names(partner.list)) return(partner.list[[distrib]])
+    "other"
 }
 ## Package in lookup table.
 if(!exists("partner.list")) 
@@ -111,7 +112,8 @@ get.distribution.type <- function(r) {
 
 ## Returns locale string for a profile (returns "missing" if invalid).
 get.locale <- function(r) {
-    isn(r$data$last$org.mozilla.appInfo.appinfo$locale, "missing")
+    loc <- isn(r$data$last$org.mozilla.appInfo.appinfo$locale)
+    if(is.na(loc)) "missing" else loc
 }
 
 ## Returns current major version number (as a string).
