@@ -415,14 +415,14 @@ summaries <- function(a,b){
     }
     bdim              <- getDimensions(b)
     bdim              <- append(bdim, getStandardizedDimensions(bdim))
-    bdim$snapshot     <- PARAM$whichDate
+    bdim$snapshot     <- PARAM$whichdate
     bdim$granularity  <- PARAM$granularity
     profileCrDate     <- getProfileCreationDate(b)
     if(is.null(profileCrDate)) return()
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
         days           <- b$data$days [names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
-        bdim$timeStart <- timeChunk['start']
-        bdim$timeEnd   <- timeChunk['end']
+        bdim$timeStart <- as.character(timeChunk['start'])
+        bdim$timeEnd   <- as.character(timeChunk['end'])
         ## Your custome code can be here (in statcomputer)
         activity       <- getAllActivity(days)
         searchcounts   <- getAllSearches(days)
