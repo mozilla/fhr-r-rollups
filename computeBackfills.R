@@ -95,36 +95,36 @@ for( pi in rev(seq_along(pathnames))){
     
     input.path      <- sqtxt(sprintf("%s/1pct/",p))
     ## Weekly Summary
-    ## timeChunksWk    <- weekTimeChunk(timeperiod$start, timeperiod$end)
-    ## W <- whichWks[i==pi,]
-    ## timeChunksWk <- Filter(function(s) if(!is.na(W[,rightmost]) && s['start'] >= W[,B]
-    ##                       && (   (W[,rightmost]==TRUE &&  s['start'] <=W[,E])
-    ##                           || (W[,rightmost]==FALSE &&  s['start'] < W[,E]))) TRUE else FALSE, timeChunksWk)
-    ## zweek           <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsummer, input=input.path
-    ##                            ,debug    = 'collect'
-    ##                            ,output   = 'rweek'
-    ##                            ,jobname  = sprintf("Weekly [ %s, %s/%s ]",dt$name,pi, length(pathnames))
-    ##                            ,mon.sec  = 0
-    ##                            ,setup    = setup
-    ##                            ,shared   = shared.files                               
-    ##                            ,read     = FALSE
-    ##                            ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
+    timeChunksWk    <- weekTimeChunk(timeperiod$start, timeperiod$end)
+    W <- whichWks[i==pi,]
+    timeChunksWk <- Filter(function(s) if(!is.na(W[,rightmost]) && s['start'] >= W[,B]
+                          && (   (W[,rightmost]==TRUE &&  s['start'] <=W[,E])
+                              || (W[,rightmost]==FALSE &&  s['start'] < W[,E]))) TRUE else FALSE, timeChunksWk)
+    zweek           <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsummer, input=input.path
+                               ,debug    = 'collect'
+                               ,output   = 'rweek'
+                               ,jobname  = sprintf("Weekly [ %s, %s/%s ]",dt$name,pi, length(pathnames))
+                               ,mon.sec  = 0
+                               ,setup    = setup
+                               ,shared   = shared.files                               
+                               ,read     = FALSE
+                               ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
 
     ## Monthly Summary
-    ## timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
-    ## W <- whichMonths[i==pi,]
-    ## timeChunksMonth <- Filter(function(s) if(!is.na(W[,rightmost]) && s['start'] >= W[,B]
-    ##                       && (   (W[,rightmost]==TRUE &&  s['start'] <=W[,E])
-    ##                           || (W[,rightmost]==FALSE &&  s['start'] < W[,E]))) TRUE else FALSE, timeChunksMonth)
-    ## zmonth          <- rhwatch(map      = summaries, reduce=rhoptions()$temp$colsummer, input=input.path
-    ##                                ,debug   = 'collect'
-    ##                                ,output  = 'rmonth'
-    ##                                ,mon.sec = 0
-    ##                                ,jobname = sprintf("Monthly [ %s %s/%s ]",dt$name,pi, length(pathnames))
-    ##                                ,setup   = setup
-    ##                                ,shared  = shared.files #FIXME: les
-    ##                                ,read    = FALSE
-    ##                                ,param   = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
+    timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
+    W <- whichMonths[i==pi,]
+    timeChunksMonth <- Filter(function(s) if(!is.na(W[,rightmost]) && s['start'] >= W[,B]
+                          && (   (W[,rightmost]==TRUE &&  s['start'] <=W[,E])
+                              || (W[,rightmost]==FALSE &&  s['start'] < W[,E]))) TRUE else FALSE, timeChunksMonth)
+    zmonth          <- rhwatch(map      = summaries, reduce=rhoptions()$temp$colsummer, input=input.path
+                                   ,debug   = 'collect'
+                                   ,output  = 'rmonth'
+                                   ,mon.sec = 0
+                                   ,jobname = sprintf("Monthly [ %s %s/%s ]",dt$name,pi, length(pathnames))
+                                   ,setup   = setup
+                                   ,shared  = shared.files #FIXME: les
+                                   ,read    = FALSE
+                                   ,param   = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
     
     ## Daily Summary
     timeChunksDay <- dayTimeChunk(timeperiod$start, timeperiod$end)
