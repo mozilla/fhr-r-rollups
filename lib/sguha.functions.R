@@ -15,7 +15,7 @@ winVerCheck <- function(ver,keepverforothers=FALSE){
   })
 }
 WNVer <- winVerCheck(keepverforothers=TRUE)
-isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0) subcode else s
+isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0 || is.na(s)) subcode else s
                                    
 getProfileCreationDate <- function(b){
     profileCrDate <- strftime(as.Date(
