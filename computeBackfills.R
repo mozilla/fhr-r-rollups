@@ -109,7 +109,6 @@ for( pi in rev(seq_along(pathnames))){
     ##                            ,shared   = shared.files                               
     ##                            ,read     = FALSE
     ##                            ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
-    ## toText("rweek",o="tweek")
 
     ## Monthly Summary
     ## timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
@@ -126,7 +125,6 @@ for( pi in rev(seq_along(pathnames))){
     ##                                ,shared  = shared.files #FIXME: les
     ##                                ,read    = FALSE
     ##                                ,param   = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
-    ## toText("rmonth",o="tmonth")
     
     ## Daily Summary
     timeChunksDay <- dayTimeChunk(timeperiod$start, timeperiod$end)
@@ -137,34 +135,50 @@ for( pi in rev(seq_along(pathnames))){
     zday <- rhwatch(map=summaries, reduce=rhoptions()$temp$colsummer, input=input.path
                     ,debug='collect'
                     ,output='rday'
-                    ,mon.sec=MS
-                    ,jobname=sprintf("Daily [ %s ]",dt$name)
-                    ,setup=expression({ library(rjson) })
+                    ,mon.sec=0
+                    ,jobname = sprintf("Monthly [ %s %s/%s ]",dt$name,pi, length(pathnames))
+                    ,setup=setup
+                    ,shared = shared.files
                     ,read=FALSE
+                    ,mapred=list(mapred.task.timeout=0)
                     ,param=list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
+    print(waitForJobs(p,pi,length(pathnames),list(zday)))
+
+    toText("rweek",o="tweek")
     toText("rday",o="tday")
-    print(waitForJobs(p,pi,length(pathnames),list(zweek, zmonth)))
+    toText("rmonth",o="tmonth")
+
 }
 email("ALL BACKFILLS DONE")
 
 
-## m0 <- function(a1,a2,a3){
+## m0 <- function(a1,a2,a3,pa){
+##     snap <- strftime(as.Date(tail(strsplit(pa,"/")[[1]],1)),"%Y%m%d")
 ##     rhwatch(map=function(a,b){
-##         a$snapshot <- snap
-##         rhcollect(a,b)
-##     }, reduce=0, input=a1,output=a2, param=list(snap=strftime(as.Date(tail(strsplit(pa,"/")[[1]],1)),"%Y%m%d")),read=FALSE)
+##         ## if(is.null(a$snapshot)) a$snapshot <- snap
+##         ## a1 <- a[ c('vendor','name','channel','os','osdetail','distribution','locale','geo','version','isstdprofile','stdchannel','stdos','distribtype','snapshot','granularity','timeStart','timeEnd')]
+##         ## a1$timeEnd <- as.character(a1$timeEnd)
+##         ## a1$timeStart <- as.character(a1$timeStart)
+##         a1 <- a
+##         b[which(is.na(b))] <- 0
+##         rhcollect(a1,b)
+##     }, reduce=0, input=a1,output=a2,read=FALSE,param=(list(snap=snap)))
 ##     rhdel(a1)
 ##     rhwatch(map=function(a,b){rhcollect(a,b)
 ##     }, reduce=0, input=a2,output=a1,read=FALSE)
 ##     rhdel(a2)
-## }
-    
-## for(pa in rhls(store.path)$file){
-##     print(pa)
-##     hdfs.setwd(pa)
-##     m0('rweek','rweek-del','week')
-##     m0('rmonth','rmonth-del','month')
 ##     toText("rweek",o="tweek")
 ##     toText("rmonth",o="tmonth")
+## }
+    
+## for(pa in rev(rhls(store.path)$file)){
+##     print(pa)
+##     hdfs.setwd(pa)
+##     ## m0('rweek','rweek-del','week',pa)
+##     m0('rmonth','rmonth-del','month',pa)
+##     ## m0('rday','rday-del','day',pa)
+##     ## toText("rweek",o="tweek")
+##     toText("rmonth",o="tmonth")
+##     ## toText("rday",o="tday")
 ## }
 

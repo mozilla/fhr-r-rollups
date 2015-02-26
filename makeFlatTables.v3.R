@@ -341,7 +341,7 @@ compute5outOf7          <- function(days,alldays,granularity,timeChunk){
         last7days <- days
         1*(length(last7days)>=5)
     }
-    else NA
+    else 0
 }
 ## Whether the profle was peviously active and since inactive.
 computeChurn1           <- function(alldays,timeChunk){
