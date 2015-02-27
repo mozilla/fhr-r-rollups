@@ -1,6 +1,8 @@
 
 ## Helper functions for processing FHR or ADI profile info values.
 
+## Need to source partner-search-lookup.RData first!
+
 ##----------------------------------------------------------------
 
 ### Standardization functions expect a scalar argument and
@@ -66,11 +68,11 @@ majorDistribValue <- function(distrib) {
     "other"
 }
 ## Package in lookup table.
-if(!exists("partner.list")) 
-    load("/usr/local/share/partner-search-lookup.RData")
-f.env <- new.env(parent = globalenv())
-assign("partner.list", partner.list, envir = f.env)
-environment(majorDistribValue) <- f.env
+# if(!exists("partner.list")) 
+    # load("/usr/local/share/partner-search-lookup.RData")
+# f.env <- new.env(parent = globalenv())
+# assign("partner.list", partner.list, envir = f.env)
+# environment(majorDistribValue) <- f.env
 
 ## Converts a version string to major version number.
 ## Returns "missing" if version number was missing or malformed.
@@ -98,6 +100,18 @@ get.standardized.channel <- function(r) {
     standardChannelValue(isn(r$geckoAppInfo$updateChannel))
 }
 
+## Returns TRUE/FALSE indicating whether the profile belongs to one of the
+## 4 standard channels.
+on.standard.channel <- function(r) {
+    !identical(get.standardized.channel(r), "other")
+}
+
+## Returns TRUE/FALSE indicating whether the profile is on the standard
+## release channel.
+on.release.channel <- function(r) {
+    identical(get.standardized.channel(r), "release")
+}
+
 ## Returns the standard (major) OS name for a profile, or "other".
 get.standardized.os <- function(r) {
     standardOSValue(isn(r$geckoAppInfo$os))
@@ -112,8 +126,7 @@ get.distribution.type <- function(r) {
 
 ## Returns locale string for a profile (returns "missing" if invalid).
 get.locale <- function(r) {
-    loc <- isn(r$data$last$org.mozilla.appInfo.appinfo$locale)
-    if(is.na(loc)) "missing" else loc
+    isn(r$data$last$org.mozilla.appInfo.appinfo$locale, "missing")
 }
 
 ## Returns current major version number (as a string).

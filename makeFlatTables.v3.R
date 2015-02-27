@@ -42,8 +42,8 @@ quarterTimeChunk <- function(years){
 
 ## Raw values for profile info dimensions.
 getDimensions <- function(b){
-    vendor   <- isn(b$gecko$vendor, "missing")
-    name     <- isn(b$gecko$name, "missing")
+    vendor   <- isn(b$geckoAppInfo$vendor, "missing")
+    name     <- isn(b$geckoAppInfo$name, "missing")
     channel  <- isn(b$geckoAppInfo$updateChannel, "missing")
     os       <- isn(b$geckoAppInfo$os, "missing")
     osdetail <- local({
@@ -60,73 +60,17 @@ getDimensions <- function(b){
         distribution=distribution, locale=locale, geo=geo, version=version)
 }
 
-## Is the record considered a standard Firefox profile
-## (ie should be included in the set of "all Firefox profiles".
-isStandardProfile <- function(vendor, appname) {
-    as.character(identical(vendor, "Mozilla") && identical(appname, "Firefox"))
-}
-
-## Standard channel name, if the channel string is considered
-## to belong to one of the 4 main channels or "esr", 
-## otherwise "other".
-getStandardChannel <- function(channel) {
-    if(identical(channel, "missing")) return("other")
-    stdchannel <- regmatches(channel, regexec(
-        "^(nightly|aurora|beta|release|esr(\\d{2})?)(-.+)?$", channel))[[1]]
-    if(length(stdchannel) == 0) return("other")
-    stdchannel <- stdchannel[[2]]
-    if(grepl("esr", stdchannel, fixed = TRUE)) return("esr")
-    stdchannel
-}
-
-## Standard OS name - for convenience in reports.
-## "Linux" bucket includes Unix-like.
-getStandardOS <- function(os) {
-    if(identical(os, "missing")) return("other")
-    if(identical(os, "WINNT")) return("Windows")
-    if(identical(os, "Darwin")) return("Mac")
-    if(grepl("Linux|BSD|SunOS", os)) return("Linux")
-    "other"
-}
- 
-## Is the distribution considered a standard Mozilla distribution?
-## Includes stock and few other specific cases. 
-isMozillaDistrib <- function(distrib) {
-    if(identical(distrib, "missing")) return(FALSE)
-    ## Stock has distributionID == "" (empty string).
-    !nzchar(distrib) || identical(distrib, "euballot") ||
-        grepl("mozilla", distrib, ignore.case = TRUE)
-}
-
-## If the distribution is considered a partner build, find the partner name.
-## Distributions from expired partnerships get the suffix "|expired" appended.
-## Otherwise, return "other".
-## partner.list.* is a lookup table mapping distribution IDs
-## to corresponding partner name,
-## for both current and expired partners. 
-getPartnerName <- function(distrib) {
-    if(distrib %in% names(partner.list.current)) 
-        return(partner.list.current[[distrib]])
-    if(distrib %in% names(partner.list.expired))
-        return(sprintf("%s|expired", partner.list.expired[[distrib]]))
-    "other"
-}
-
 ## Summary or standardized values for profile info (for convenience). 
 ## Pass in output of getDimensions.
 getStandardizedDimensions <- function(dims) {
-    isstdprofile <- isStandardProfile(dims$vendor, dims$name)
-    stdchannel <- getStandardChannel(dims$channel)
-    stdos <- getStandardOS(dims$os)
+    isstdprofile <- as.character(standardProfileValue(dims$vendor, dims$name))
+    stdchannel <- standardChannelValue(dims$channel)
+    stdos <- standardOSValue(dims$os)
     ## Identifier for the distribution group.
     ## "mozilla" for standard Moz distributions,
     ## <partnerID> for partner builds,
     ## otherwise "other".
-    distribtype <- if(isMozillaDistrib(dims$distribution)) { 
-        "mozilla" 
-    } else { 
-        getPartnerName(dims$distribution) 
-    }
+    distribtype <- majorDistribValue(dims$distribution)
     
     list(isstdprofile=isstdprofile, stdchannel=stdchannel, stdos=stdos,
         distribtype=distribtype)
