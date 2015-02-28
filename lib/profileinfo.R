@@ -1,15 +1,20 @@
+#######################################################################
+###  
+###  Helper functions for processing FHR or ADI profile info values.
+###  
+###  Convenience function are provider further down for accessing
+###  these values from the full JSON record directly.
+###  
+###  Need to source partner-search-lookup.RData first!
+###  
+#######################################################################
 
-## Helper functions for processing FHR or ADI profile info values.
 
-## Need to source partner-search-lookup.RData first!
-
-##----------------------------------------------------------------
-
-### Standardization functions expect a scalar argument and
+### Standardization functions expect scalar arguments and
 ### return a standardized value (useful for grouping).
 ### Missing or invalid values are expected to be represented
 ### by either NA or "missing".
-### Currently NULL values are not handled (should not be passed).s
+### Currently NULL values are not handled (should not be passed).
 
 ## Is the record considered a standard Firefox profile?
 ## (ie should it be included in the set of "all Firefox profiles").
