@@ -82,7 +82,7 @@ whichWks    <- getCorrectedDates(weekTimeChunk)
 whichMonths <- getCorrectedDates(monthTimeChunk)
 whichDays   <- getCorrectedDates(dayTimeChunk)
 
-for( pi in rev(seq_along(pathnames))){
+for( pi in (seq_along(pathnames))){
     p               <- pathnames[pi]
     dt              <- extract.date(p)
     fileOriginDate  <- dt$date
@@ -136,19 +136,21 @@ for( pi in rev(seq_along(pathnames))){
                     ,debug='collect'
                     ,output='rday'
                     ,mon.sec=0
-                    ,jobname = sprintf("Monthly [ %s %s/%s ]",dt$name,pi, length(pathnames))
+                    ,jobname = sprintf("Daily [ %s %s/%s ]",dt$name,pi, length(pathnames))
                     ,setup=setup
                     ,shared = shared.files
                     ,read=FALSE
                     ,mapred=list(mapred.task.timeout=0)
                     ,param=list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
-    print(waitForJobs(p,pi,length(pathnames),list(zday)))
+    print(waitForJobs(p,pi,length(pathnames),list(zweek,zmonth,zday)))
 
     toText("rweek",o="tweek")
-    toText("rday",o="tday")
+    ## toText("rday",o="tday")
     toText("rmonth",o="tmonth")
 
 }
+
+
 email("ALL BACKFILLS DONE")
 
 

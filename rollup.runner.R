@@ -53,7 +53,7 @@ setwd("~/fhr-r-rollups")
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
-I <- list(name="/user/sguha/fhr/samples/output/fromjson1pct",tag=FALSE)
+I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE) ## tag if need to apply fromJSON
 
 ## Get the snapshot date from the sample creation time
 rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text')
@@ -106,6 +106,7 @@ uday            <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,setup    = setup
                            ,shared   = shared.files                               
                            ,read     = FALSE
+                           ,mapred   = list(mapred.task.timeout=0)
                            ,param    = list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
 
 print(waitForJobs(list(uday,umonth, uweek)))
@@ -114,5 +115,65 @@ toText("rweek"  ,o="tweek")
 toText("rday"   ,o="tday")
 toText("rmonth" ,o="tmonth")
 
+
+################################################################################
+## Now merge into vertica
+################################################################################
+
+email(subj="Verica Import Begins", body="empty body",to="<joy@mozilla.com>")
+
+d <- odbc(user='fhr_rollup_rw', pass='WIATOoTv5qc4Macl')
+exceptionsFile = "fhr_tables_import_exceptions.txt"
+badDataFile =  "fhr_tables_import_baddata.txt"
+Sys.setenv(HADOOP_HOME="")
+
+G <- function(s) if(s %in% c("week","month")) sprintf("%sly",s) else "daily"
+for(x in c( "day","week",'month')){
+    ## We need to copy the data
+    inputLocation = sprintf("%s/t%s", hdfs.getwd(),x)
+    t <- tempfile()
+    sys_cmd = sprintf("hadoop dfs -text %s/part* > %s", inputLocation, t)
+    print("---------" )
+    print(sys_cmd)
+    result <- system(sys_cmd,intern=TRUE)
+    print(result)
+    print(sprintf("Copied %s MB", j <- round( as.numeric(file.info(t)['size']/1024^2))))
+
+    ## Now delete this data frokm the table if it exists (just in case
+    ## we want tor run this merge again, we do not want a duplicate copy
+    dbSendUpdate(d$con,sprintf( "DELETE FROM fhr_rollups_%s_base  where snapshot = '%s'", G(x), fileOrigin))
+
+    ## Delete data from previous rollup run to remove duplicates
+    maxPreviousSnapshot <- as.character(d$q(sprintf("select max(snapshot) from fhr_rollups_%s_base", G(x))))
+    ## Keep only data before this date from previous snapshot
+    (    data.frame(data.table(d$q(sprintf("select distinct(timeStart) as v from fhr_rollups_%s_base where snapshot='%s'",G(x),maxPreviousSnapshot)))[order(v),]))
+    (keepdates <- range(unlist(list(day=timeChunksDay, week=timeChunksWk,month=timeChunksMonth)[[x]])))
+    (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),maxPreviousSnapshot, keepdates[1]))
+    dbSendUpdate(d$con,sql)
+    
+    system(sprintf("rm -rf /tmp/%s-%s",exceptionsFile,x))
+    sql <- sprintf("COPY fhr_rollups_%s_base  FROM LOCAL '%s' delimiter '\t' EXCEPTIONS '/tmp/%s-%s' REJECTED DATA '/tmp/%s-%s' ;", G(x) , t, exceptionsFile, x,badDataFile,x)
+    dbSendUpdate(d$con, sql)
+    err <- if(file.exists(sprintf("/tmp/%s-%s",exceptionsFile,x))) tryCatch(strsplit(system(sprintf("wc -l  /tmp/%s-%s",exceptionsFile,x),intern=TRUE)," ")[[1]][[1]],error=function(e) 0) else err <- 0
+    if(err>0) stop("Errors parsing")
+}
+
+
+## Testing, do not delete, this is useful
+## h <- odbc()
+
+## (v1 <- data.table(h$q("select timeStart,sum(tTotalProfiles) as t,sum(tNewProfiles) as n,sum(tExistingProfiles) as e, sum(tDefault) as d, sum(tInactiveLast30Days) as ch, sum(twasActive5) as t57,sum(tSrch) as sr, sum(tSrchGoogle) as srg, sum(tSrchYahoo) as sry from fhr_rollups_day_view where prodname='Firefox'and prodVersion='ANY' group by timeStart order by timeStart")))
+
+## (v2 <- data.table(d$q("select timeStart,sum(tTotalProfiles) as t,sum(tNewProfiles) as n,sum(tExistingProfiles) as e, sum(tIsDefault) as d, sum(tChurned) as ch, sum(t5outOf7) as t57,sum(tTotalSearch) as sr, sum(tGoogleSearch) as srg, sum(tYahooSearch) as sry from fhr_rollups_daily_base where name='Firefox' group by timeStart order by timeStart")))
+
+## (s1 <- v1[timeStart %between% c("2015-02-01","2015-02-06"),])
+## (s2 <- v2[timeStart %between% c("2015-02-01","2015-02-06"),])
+
+
+## local({
+##     a <- as.matrix(s1[, 2:10, with=FALSE])
+##     b <- as.matrix(s2[, 2:10, with=FALSE])
+##     round(100*abs(a-b)/a,1)
+## })
 
 
