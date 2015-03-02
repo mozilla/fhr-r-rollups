@@ -92,6 +92,11 @@ computeNewProfiles      <- function(profileCrDate,timeChunk) if(profileCrDate >=
 ## Whether profile existed during time chunk.
 computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <= timeChunk['end']) 1 else 0
 
+## Number of active days in the time chunk.
+computeActiveDays <- function(days) {
+    length(days)
+}
+
 ## Total time in seconds for sessions started during time chunk.
 computeTotalSeconds <- function(activity) {
     activity$totalsec
@@ -293,6 +298,7 @@ computeAllStats <- function(days,control){
         tExistingProfiles                   = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
         tNewProfiles                        = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
         tActiveProfiles                     = isn(computeActives(days),0),
+        tActiveDays                         = isn(computeActiveDays(days),0),
         tTotalSeconds                       = computeTotalSeconds(control$activity),
         tActiveSeconds                      = computeActiveSeconds(control$activity),
         tNumSessions                        = computeNumSessions(control$activity),
