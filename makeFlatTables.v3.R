@@ -80,38 +80,6 @@ getStandardizedDimensions <- function(dims) {
 
 ### Activity stats ###
 
-## Extract all session activity over the time chunk.
-## Returns a list with summary stats for each day.
-# getAllActivity <- function(days) {
-    # if(length(days) == 0) return(NULL)
-    # act <- lapply(days, function(d) {
-        # d <- d$org.mozilla.appSessions.previous
-        # if(length(d) == 0) return(NULL)
-        
-        # tt <- c(d$cleanTotalTime, d$abortedTotalTime)
-        # at <- c(d$cleanActiveTicks, d$abortedActiveTicks)
-        # ## Each vector must have the same number of sessions. 
-        # if(!identical(length(tt), length(at))) return(NULL)
-        # ## Make sure the record for this day is non-null.
-        # if(length(tt) == 0) return(NULL)
-        
-        # ## Check for NA, negative times, or unreasonably huge times
-        # ## (indicating errors). 
-        # ## In checking for positive times, active ticks could be 0.
-        # bad <- is.na(tt) | is.na(at) | tt <= 0 | at < 0 |
-            # tt > 15552000 | at > 3110400
-        # if(all(bad)) return(NULL)
-        # if(any(bad)) {
-            # tt <- tt[!bad]
-            # at <- at[!bad]
-        # }
-        
-        # list(nsessions = length(tt), totalSeconds = sum(tt), 
-            # activeSeconds = sum(at) * 5)
-    # })
-    # act[!unlist(lapply(act, is.null))]
-# }
-
 ## Whether profile was active in time chunk.
 computeActives          <- function(days)    if(length(days)>0) 1 else 0
 
@@ -126,17 +94,14 @@ computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <=
 
 ## Total time in seconds for sessions started during time chunk.
 computeTotalSeconds <- function(activity) {
-    # sum(unlist(lapply(activity, "[[", "totalSeconds")))
     activity$totalsec
 }
 ## Total active time in seconds for sessions started during time chunk.
 computeActiveSeconds <- function(activity) {
-    # sum(unlist(lapply(activity, "[[", "activeSeconds")))
     activity$activesec
 }
 ## Total # sessions started during time chunk.
 computeNumSessions <- function(activity) {
-    # sum(unlist(lapply(activity, "[[", "nsessions")))
     activity$nsessions
 }
 
@@ -367,15 +332,13 @@ summaries <- function(a,b){
     profileCrDate     <- getProfileCreationDate(b)
     if(is.null(profileCrDate)) return()
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
-        # days           <- b$data$days [names(b$data$days)>=timeChunk['start']  & names(b$data$days)<= timeChunk['end']]
         days           <- get.active.days(b, timeChunk['start'], timeChunk['end'])
         bdim$timeStart <- as.character(timeChunk['start'])
         bdim$timeEnd   <- as.character(timeChunk['end'])
-        ## Your custome code can be here (in statcomputer)
-        # activity       <- getAllActivity(days)
         ## Activity measured aggregated over time chunk.
         activity       <- totalActivity(allActivity(days))
         searchcounts   <- getAllSearches(days)
+        ## Your custome code can be here (in statcomputer):
         mystats        <- PARAM$statcomputer(days, control=list(
             jsObject      = b,
             profileCrDate = profileCrDate, 
