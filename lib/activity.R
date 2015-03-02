@@ -226,7 +226,12 @@ last.month.day <- function(dates) {
     format(dates, "%Y-%m-%d")
 }
 
-
+## Returns booleans for each date in the input vector indicating whether
+## the date is a weekday.
+is.weekday <- function(dates) {
+    dates <- as.POSIXlt(dates, format = "%Y-%m-%d")
+    dates$wday %in% 1:5
+}
 
 
 
