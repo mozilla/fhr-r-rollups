@@ -19,7 +19,10 @@
 ## 
 ## Returns a list with an entry for each day that has session information
 ## (appSessions.previous entry), or NULL if none are found in the supplied list.
-## Each entry is of the form 
+## Note that the returned list may not have an entry for every active day, 
+## or may be NULL even if the record has active days, in cases where sessions
+## were started on few or none of the active days.
+## Each entry is of the form: 
 ## list(totalsec = numeric(...), activesec = numeric(...)). 
 ## The two vectors give the number of total and active seconds 
 ## for each session started on that day, including both clean and 
@@ -64,7 +67,7 @@ allActivity <- function(days) {
 ## total session seconds, total active seconds) for a single day's 
 ## session activity (ie. a single entry of the list returned by allActivity()).
 ##
-## Returns a list of the form list(nsessions, totalsec, activesec), 
+## Returns a list of the form: list(nsessions, totalsec, activesec), 
 ## giving the number of sessions started on the day, and the total overall 
 ## and active seconds for these sessions.
 ## If the input contains no activity, each value of the result will be 0.
@@ -80,7 +83,7 @@ dailyActivityValues <- function(activityday) {
 ## 
 ## Input is the list returned by allActivity(). 
 ## Returns a list with the same names as the input, or NULL if the input 
-## has zero length. Each entry is of the form 
+## has zero length. Each entry is of the form:
 ## list(nsessions, totalsec, activesec), giving the number of sessions 
 ## started on that day, and the total overall and active seconds 
 ## for these sessions.
@@ -94,7 +97,7 @@ dailyActivity <- function(activity) {
 ## started during an entire time period.
 ## 
 ## Input is the list returned by allActivity(). 
-## Returns a list of the form list(nsessions, totalsec, activesec), 
+## Returns a list of the form: list(nsessions, totalsec, activesec), 
 ## listing the number of sessions started during the period, 
 ## and the total overall and active seconds for these sessions.
 ## If the input contains no activity, each value of the result will be 0.
@@ -110,11 +113,14 @@ totalActivity <- function(activity) {
 ## a specified time period, bounded inclusively by 'from' and 'to'. 
 ## If either is missing, its bound is replaced by the earliest or latest
 ## date respectively that is considered valid for FHR dates.
+## The arguments 'from' and 'to' are expected to be scalars.
 ##
-## Returns a vector of booleans the same length as vector of dates, 
+## Returns a vector of booleans the same length as the vector of dates, 
 ## indicating for each whether it falls in the period.
 areDatesInPeriod <- function(dates, from = NULL, to = NULL) {
     ## Ignore FHR dates earlier than April 2013.
+    if(length(from) > 1 || length(to) > 1) 
+        stop("'from' and 'to' are expected to be single (scalar) dates.")
     if(length(from) == 0) from <- "2013-04-01"
     ## Latest valid date is today.
     if(length(to) == 0) to <- Sys.Date()
@@ -142,6 +148,14 @@ is.active <- function(r, from = NULL, to = NULL) {
     any(areDatesInPeriod(names(r$data$days), from, to))
 }
 
+## Returns a boolean indicating whether the profile was active during
+## the month represented by a date string. 
+## The month to check for is the year/month to which the specified date
+## belongs.
+is.active.in.month <- function(r, month) {
+    is.active(r, from = to.month(month), to = last.month.day(month))
+}
+
 ## Returns the list of FHR days (data$days) from the profile, 
 ## optionally restricted to a date range, or NULL if the profile has
 ## no such active days.
@@ -164,7 +178,7 @@ count.active.days <- function(r, from = NULL, to = NULL) {
 ## Computes the total number of active days and session activity totals
 ## for days and sessions started during the specified time period.
 ## 
-## Returns a list of the form 
+## Returns a list of the form: 
 ## list(nactivedays, nsessions, totalsec, activesec), 
 ## giving the number of active days during the period, 
 ## the number of sessions started during the period, 
@@ -181,14 +195,31 @@ get.total.activity <- function(r, from = NULL, to = NULL) {
 
 ## Convenience functions for working with dates.
 
-
+## Converts date strings to months (represented as the date string 
+## for the first day in the month, ie. "yyyy-mm-01").
+## Returns a vector of character strings the same length as the input vector.
 to.month <- function(dates) {
-    
+    dates <- as.POSIXlt(dates, format = "%Y-%m-%d")
+    ## Set the day of the month to 1.
+    dates$mday <- 1
+    format(dates, "%Y-%m-%d")
 }
-
-
-last.month.day <- function(month) {
-
+ 
+## Computes the last day in the month for each date represented in a vector
+## of character strings. 
+## For each input date string, finds the year/month to which that date belongs.
+## Returns a vector of date strings representing the last date 
+## of each year/month.
+last.month.day <- function(dates) {
+    dates <- as.POSIXlt(dates, format = "%Y-%m-%d")
+    ## Set dates to the first day of their dates, to ensure that 
+    ## advancing dates works properly.
+    dates$mday <- 1
+    ## Advance year/month by 1.
+    dates$mon <- dates$mon + 1
+    ## Reverse to the last day of the previous month (ie the original month).
+    dates$mday <- 0
+    format(dates, "%Y-%m-%d")
 }
 
 

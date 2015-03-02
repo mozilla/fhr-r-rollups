@@ -106,7 +106,7 @@ get.standardized.channel <- function(r) {
 }
 
 ## Returns TRUE/FALSE indicating whether the profile belongs to one of the
-## 4 standard channels.
+## 4 standard channels or ESR.
 on.standard.channel <- function(r) {
     !identical(get.standardized.channel(r), "other")
 }
