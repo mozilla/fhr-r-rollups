@@ -111,8 +111,7 @@ totalActivity <- function(activity) {
 
 ## Checks whether a vector of dates (Date or character) fall within 
 ## a specified time period, bounded inclusively by 'from' and 'to'. 
-## If either is missing, its bound is replaced by the earliest or latest
-## date respectively that is considered valid for FHR dates.
+## If either is missing, that end of the time period is considered unbounded.
 ## The arguments 'from' and 'to' are expected to be scalars.
 ##
 ## Returns a vector of booleans the same length as the vector of dates, 
@@ -121,10 +120,15 @@ areDatesInPeriod <- function(dates, from = NULL, to = NULL) {
     ## Ignore FHR dates earlier than April 2013.
     if(length(from) > 1 || length(to) > 1) 
         stop("'from' and 'to' are expected to be single (scalar) dates.")
-    if(length(from) == 0) from <- "2013-04-01"
+    # mindate <- "2013-04-01"
+    # maxdate <- Sys.Date()
+    # if(length(from) == 0 || from < mindate) from <- mindate
     ## Latest valid date is today.
-    if(length(to) == 0) to <- Sys.Date()
-    dates >= from & dates <= to
+    # if(length(to) == 0 || to > maxdate) to <- maxdate
+    inperiod <- rep_len(TRUE, length(dates))
+    if(length(from) > 0) inperiod <- inperiod & dates >= from
+    if(length(to) > 0) inperiod <- inperiod & dates <= to
+    inperiod
 }
 
 
