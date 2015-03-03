@@ -83,31 +83,39 @@ dailyActivityValues <- function(activityday) {
 ## total session seconds, total active seconds) for days on which 
 ## sessions started. 
 ## 
-## Input is the list returned by allActivity(). 
+## Input is either the data$days list (default), or the list returned 
+## by allActivity(). This should be specified by setting 'preprocess' to TRUE
+## for the former and FALSE for the latter. 
+##
 ## Returns a list with the same names as the input, or NULL if the input 
 ## has zero length. Each entry is of the form:
 ## list(nsessions, totalsec, activesec), giving the number of sessions 
 ## started on that day, and the total overall and active seconds 
 ## for these sessions.
-dailyActivity <- function(activity) {
-    if(length(activity) == 0) return(NULL)
-    lapply(activity, dailyActivityValues)
+dailyActivity <- function(days, preprocess = TRUE) {
+    if(preprocess) days <- allActivity(days)
+    if(length(days) == 0) return(NULL)
+    lapply(days, dailyActivityValues)
 }
 
 ## Computes total session activity statistics (number of sessions,
 ## total session seconds, total active seconds) across all sessions
 ## started during an entire time period.
 ## 
-## Input is the list returned by allActivity(). 
+## Input is either the data$days list (default), or the list returned 
+## by allActivity(). This should be specified by setting 'preprocess' to TRUE
+## for the former and FALSE for the latter. 
+##
 ## Returns a list of the form: list(nsessions, totalsec, activesec), 
 ## listing the number of sessions started during the period, 
 ## and the total overall and active seconds for these sessions.
 ## If the input contains no activity, each value of the result will be 0.
-totalActivity <- function(activity) {
-    if(length(activity) == 0) 
+totalActivity <- function(days, preprocess = TRUE) {
+    if(preprocess) days <- allActivity(days)
+    if(length(days) == 0) 
         return(list(nsessions = 0, totalsec = 0, activesec = 0))
-    activity <- list(totalsec = unlist(lapply(activity, "[[", "totalsec")),
-        activesec = unlist(lapply(activity, "[[", "activesec")))
+    activity <- list(totalsec = unlist(lapply(days, "[[", "totalsec")),
+        activesec = unlist(lapply(days, "[[", "activesec")))
     dailyActivityValues(activity)
 }
 
@@ -192,8 +200,7 @@ count.active.days <- function(r, from = NULL, to = NULL) {
 ## If the input contains no activity, values of the result will be 0.
 get.total.activity <- function(r, from = NULL, to = NULL) {
     days <- get.active.days(r, from, to)
-    totalact <- totalActivity(allActivity(days))
-    c(nactivedays = length(days), totalact)
+    c(nactivedays = length(days), totalActivity(days))
 }
 
 

@@ -93,22 +93,16 @@ computeNewProfiles      <- function(profileCrDate,timeChunk) if(profileCrDate >=
 computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <= timeChunk['end']) 1 else 0
 
 ## Number of active days in the time chunk.
-computeActiveDays <- function(days) {
-    length(days)
-}
+computeActiveDays <- function(days) length(days)
 
 ## Total time in seconds for sessions started during time chunk.
-computeTotalSeconds <- function(activity) {
-    activity$totalsec
-}
+computeTotalSeconds <- function(activity) activity$totalsec 
+
 ## Total active time in seconds for sessions started during time chunk.
-computeActiveSeconds <- function(activity) {
-    activity$activesec
-}
+computeActiveSeconds <- function(activity) activity$activesec 
+
 ## Total # sessions started during time chunk.
-computeNumSessions <- function(activity) {
-    activity$nsessions
-}
+computeNumSessions <- function(activity) activity$nsessions
 
 
 #---------------------------------------
@@ -342,7 +336,7 @@ summaries <- function(a,b){
         bdim$timeStart <- as.character(timeChunk['start'])
         bdim$timeEnd   <- as.character(timeChunk['end'])
         ## Activity measured aggregated over time chunk.
-        activity       <- totalActivity(allActivity(days))
+        activity       <- totalActivity(days)
         searchcounts   <- getAllSearches(days)
         ## Your custome code can be here (in statcomputer):
         mystats        <- PARAM$statcomputer(days, control=list(
