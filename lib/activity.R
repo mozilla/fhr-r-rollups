@@ -35,9 +35,10 @@ allActivity <- function(days) {
     act <- lapply(days, function(d) {
         d <- d$org.mozilla.appSessions.previous
         if(length(d) == 0) return(NULL)
+        
         ## Combine clean and aborted session times.
-        tt <- c(d$cleanTotalTime, d$abortedTotalTime)
-        at <- c(d$cleanActiveTicks, d$abortedActiveTicks)
+        tt <- as.numeric(c(d$cleanTotalTime, d$abortedTotalTime))
+        at <- as.numeric(c(d$cleanActiveTicks, d$abortedActiveTicks))
         ## Each vector must have the same number of sessions. 
         if(!identical(length(tt), length(at))) return(NULL)
         ## Make sure the record for this day is non-null.
@@ -54,6 +55,7 @@ allActivity <- function(days) {
             tt <- tt[!bad]
             at <- at[!bad]
         }
+        
         list(totalsec = tt, activesec = at * 5)
     })
     ## Remove NULL entries before returning. 
