@@ -1,6 +1,39 @@
 #######################################################################
 ###  
-###  Functions for computing browser activity for FHR profiles.
+###  These are functions for computing browser activity for FHR 
+###  profiles, such as active days and sessions counts and times.
+###  
+###  Functions in the second section below are convenience functions
+###  for working at the profile level. They take as arguments the full
+###  parsed payload, and optional start and end dates for bounding 
+###  a time period of interest. There are functions for checking for 
+###  activity and counting active days and total activity statistics 
+###  during the period. However, if the data$days object will be 
+###  used for other things in the script, the best thing is to extract
+###  it directly using get.active.days().
+### 
+###  Functions in the first section are lower-level and are applied to
+###  subsets of the data$days list in the FHR payload (such as would
+###  be returned by get.active.days()). The functions dailyActivity()
+###  and totalActivity() compute session-based activity statistics 
+###  either per active day or in aggregate over all the active days.
+###  Session-based days are different from active days, since not 
+###  every active day need have a session started on that day (and a 
+###  corresponding appSessions.previous entry in the payload). 
+###  
+###  Each of these functions require applying the function allActivity() 
+###  to the data$days list as a preprocessing step. However, it is 
+###  usually not necessary to do this explicitly. Passing 
+###  'preprocess = TRUE' (the default) in the Activity functions will
+###  apply the preprocessing to the data$days list automatically. 
+###  If this is to be applied multiple times to the same active days,
+###  it may be better to cache the output of allActivity() first and 
+###  use 'preprocess = FALSE'.
+###  
+###  The third sections consists of functions for mapping dates to 
+###  months (first or last day of the month containing the date),
+###  and checking whether a day is a weekday. Dates can be passed as
+###  either character strings or Date objects.
 ###  
 #######################################################################
 

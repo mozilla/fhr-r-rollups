@@ -1,11 +1,21 @@
 #######################################################################
 ###  
-###  Helper functions for processing FHR or ADI profile info values.
+###  ## Need to source partner-search-lookup.RData first! ##
 ###  
-###  Convenience function are provider further down for accessing
-###  these values from the full JSON record directly.
+###  This script assembles functions for processing FHR profile info 
+###  values, such as channel and distribution. There is also a check 
+###  for profiles that are considered standard valid profiles. 
 ###  
-###  Need to source partner-search-lookup.RData first!
+###  Functions in the first section are low-level functions. They 
+###  take the raw values of the profile info variables, and apply our
+###  criteria for standardization and validity. These generally
+###  should only be used directly if the raw value has already been
+###  looked up. 
+###  
+###  The second section contains convenience functions for working
+###  with info variables at the profile level. It is these that 
+###  should generally be used to look up values. The argument is the 
+###  entire parsed JSON record. 
 ###  
 #######################################################################
 

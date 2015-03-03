@@ -67,5 +67,3 @@ allSearches <- function(days) {
 
 
 
-
-
