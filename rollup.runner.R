@@ -158,6 +158,10 @@ for(x in c( "day","week",'month')){
     if(err>0) stop("Errors parsing")
 }
 
+.s <- d$q("select max(timeStart), min(timeStart) from fhr_rollups_daily_base")
+email(subj=sprintf("FHR Rollups V2: Completed for %s", strftime(as.Date(fileOrigin,"%Y%m%d"),"%Y-%m-%d")),
+      body=sprintf("Rolllups have been created with a min date of %s and a max date of %s",  as.character(.s[2]), as.character(.s[1])),
+      to="<metrics@mozilla.com>")
 
 ## Testing, do not delete, this is useful
 ## h <- odbc()
