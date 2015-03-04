@@ -65,5 +65,42 @@ allSearches <- function(days) {
     sc
 }
 
-
+## Computes the search counts for a single day's searches (a single entry
+## in the list returned by allSearches()), totaled by
+## search provider and SAP.
+##
+## The provider and SAP identifier strings can optionally be grouped, and the
+## search counts will be summed over these groups instead of over the raw 
+## identifiers. To do this, supply functions to the arguments provider.grouping 
+## and sap.grouping. The functions should map a vector of identifier strings to 
+## the corresponding group labels that they should be counted under. The default
+## grouping is to use all original identifiers.
+##
+## Either of the provider or SAP dimensions can be ignored entirely in summing,
+## ie. all its identifiers are lumped into a single, trivial group, and the 
+## results will not include it. To do this, set the appropriate grouping
+## argument to NULL. Seting both to NULL means computing overall total searches.
+##
+## The retun value depends on which of the provider and SAP dimensions are used
+## for counting. If both grouping arguments are NULL, the result is a scalar 
+## count of overall total searches for that day. If one grouping argument is 
+## NULL, the result is a named vector mapping group names to search counts for 
+## that group. If both grouping dimensions are used, the result is a 
+## two-dimensional array, with provider groups as row names and SAP groups as 
+## column names.
+searchCountValues <- function(searchday, provider.grouping = identity, 
+                                                sap.grouping = identity) {
+    ## If both grouping arguments are NULL, just return the total count.
+    if(is.null(provider.grouping) && is.null(sap.grouping))
+        return(sum(searchday$count))
+    ## Otherwise apply grouping and use tapply.
+    groupby <- list()
+    if(!is.null(provider.grouping))
+        groupby[[length(groupby) + 1]] <- provider.grouping(searchday$provider)
+    if(!is.null(sap.grouping))
+        groupby[[length(groupby) + 1]] <- sap.grouping(searchday$sap)
+    ## Convert grouping variables to factor explicity to retain NAs.
+    groupby <- lapply(groupby, factor, exclude = NULL)
+    tapply(searchday$count, groupby, sum, simplify = TRUE)
+}
 
