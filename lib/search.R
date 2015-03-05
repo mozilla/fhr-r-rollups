@@ -214,7 +214,8 @@ dailySearchCounts <- function(days, provider = TRUE, sap = TRUE,
 ##
 ## Arguments are as described for dailySearchCounts().
 ##
-## The return value is the same as that for searchCountValues().
+## The return value is the same as that for searchCountValues() 
+## (in particular, NULL if no searches are found or retained).
 totalSearchCounts <- function(days, provider = TRUE, sap = TRUE, 
                                         removeNA = FALSE, preprocess = TRUE) {
     if(preprocess) days <- allSearches(days)
