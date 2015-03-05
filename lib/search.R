@@ -244,6 +244,8 @@ groupingFunction <- function(grouping) {
 ## mapping search provider strings to actual search engines. 
 ## 
 ## These can be used to create groups for the *SearchCounts() functions above.
+## The argument 'distribtype' in the following functions should be supplied
+## the major distribution type or partner as returned by majorDistribValue().
 
 
 ## Returns the list of search provider name strings representing official
@@ -294,4 +296,30 @@ searchNamesOfficialAndPartner <- function(distribtype = NULL, prefix = NULL) {
     partnersearch <- unlist(partner.plugins[distribtype], use.names = FALSE)
     append(searchnames, sprintf("other-%s", partnersearch))
 }
-                                            
+
+## List of all search provider names considered official plugins for 
+## the given distribution type, returned as a character vector.
+## Consists of all official stock plugin names and any "other"-prefixed
+## names to be included for the specified distribution.
+official.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype)
+}
+
+## List of all search provider names associated with official Yahoo searches
+## for the specified distribution, returned as a character vector.
+yahoo.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "yahoo")
+}
+
+## List of all search provider names associated with official Bing searches
+## for the specified distribution, returned as a character vector.
+bing.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "bing")
+}
+
+## List of all search provider names associated with official Google searches
+## for the specified distribution, returned as a character vector.
+google.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "google")
+}
+
