@@ -11,7 +11,7 @@
 ###  during the period. However, if the data$days object will be 
 ###  used for other things in the script, the best thing is to extract
 ###  it directly using get.active.days().
-### 
+###  
 ###  Functions in the first section are lower-level and are applied to
 ###  subsets of the data$days list in the FHR payload (such as would
 ###  be returned by get.active.days()). The functions dailyActivity()

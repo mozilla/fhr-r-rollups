@@ -2,7 +2,30 @@
 ###  
 ###  ## Need to source partner-search-lookup.RData first! ##
 ###  
-###  Functions for computing search statistics for FHR profiles.
+###  These are functions for computing search counts for FHR profiles,
+###  by search provider name and SAP name, by day or overall for the
+###  profile.
+###  
+###  Search counts should be computed using dailySearchCounts() or
+###  totalSearchCounts(). They can return overall sums, or else search 
+###  counts over groups of search provider or SAP. Groupings can be 
+###  specified in a variety of ways, as explained in the function doc.
+###  These functions are applied to the data$days list in the FHR 
+###  payload.
+###  
+###  Each of these functions require applying the function allSearches() 
+###  to the data$days list as a preprocessing step. However, it is 
+###  usually not necessary to do this explicitly. Passing 
+###  'preprocess = TRUE' (the default) in the SearchCounts functions 
+###  will apply the preprocessing to the data$days list automatically. 
+###  If this is to be applied multiple times to the same active days,
+###  it may be better to cache the output of allSearches() first and 
+###  use 'preprocess = FALSE'.
+###  
+###  The second section gives some convenience functions for finding
+###  search provider names that correspond to official partner searches
+###  and major search engines. These can be used to group searches
+###  in the SearchCounts functions.    
 ###  
 #######################################################################
 
@@ -173,7 +196,7 @@ searchCountValues <- function(searchday, provider.grouping = identity,
 ## or a one- or two-dimensional array.
 dailySearchCounts <- function(days, provider = TRUE, sap = TRUE, 
                                         removeNA = FALSE, preprocess = TRUE) {
-    if(preprocess) days <- allSearch(days)
+    if(preprocess) days <- allSearches(days)
     if(length(days) == 0) return(NULL)
     searchcounts <- lapply(days, searchCountValues, groupingFunction(provider),
         groupingFunction(sap), removeNA)
@@ -194,7 +217,7 @@ dailySearchCounts <- function(days, provider = TRUE, sap = TRUE,
 ## The return value is the same as that for searchCountValues().
 totalSearchCounts <- function(days, provider = TRUE, sap = TRUE, 
                                         removeNA = FALSE, preprocess = TRUE) {
-    if(preprocess) days <- allSearch(days)
+    if(preprocess) days <- allSearches(days)
     if(length(days) == 0) return(NULL)
     searches <- list(provider = unlist(lapply(days, "[[", "provider")),
         sap = unlist(lapply(days, "[[", "sap")),
