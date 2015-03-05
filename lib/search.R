@@ -1,5 +1,7 @@
 #######################################################################
 ###  
+###  ## Need to source partner-search-lookup.RData first! ##
+###  
 ###  Functions for computing search statistics for FHR profiles.
 ###  
 #######################################################################
@@ -145,9 +147,10 @@ searchCountValues <- function(searchday, provider.grouping = identity,
 ##    mapping a vector of identifiers to a vector of booleans indicating whether
 ##    each should be assigned to that group. Identifiers that are not assigned
 ##    to any group by any of these functions will be assigned to a group named NA.
-##    To specify another for this "unassigned" group, the list should contain
-##    an entry NA whose name is the desired group name. An example of this form
-##    is: list(yahoo = function() {...}, google = function() {...}, other = NA).
+##    To specify another name for this "unassigned" group, the list should 
+##    contain an entry NA whose name is the desired group name. An example of 
+##    this form is: 
+##      list(yahoo = function() {...}, google = function() {...}, other = NA).
 ##  An input in any different form generates an error.
 ## 
 ## By default, any searches assigned to a group labelled NA will be treated
@@ -161,7 +164,7 @@ searchCountValues <- function(searchday, provider.grouping = identity,
 ## 
 ## Returns a list with an entry for each day that has searches (as returned by
 ## allSearches()), except for days for which all searches were removed by 
-## setting removeNA = TRUE. If there are no such days, returns NULL.
+## setting removeNA = TRUE. If there are no remaining days, returns NULL.
 ## Each entry is of the form returned by searchCountValues(), either a scalar
 ## or a one- or two-dimensional array.
 dailySearchCounts <- function(days, provider = TRUE, sap = TRUE, 
@@ -236,5 +239,59 @@ groupingFunction <- function(grouping) {
 
 ##----------------------------------------------------------------
 
+## These functions identify commonly queried search types (ie. searches 
+## through major partner search engines), subject to our scheme for
+## mapping search provider strings to actual search engines. 
+## 
+## These can be used to create groups for the *SearchCounts() functions above.
 
+
+## Returns the list of search provider name strings representing official
+## search plugins, optionally restricted to those related to a major search 
+## engine.
+## 
+## Official search plugins consist of all the plugins included across all 
+## stock builds, and may also include certain "other"-prefixed search names 
+## on certain partner distributions. Hence, this list should be queried 
+## separately for each profile, based on its distribution. 
+##
+## Official plugins related to major search providers are generally identified
+## by full name or prefix which generally matches the partner name (suffixes
+## generally indicate localizations). Official plugins related to search partners
+## should generally include the prefixed stock plugins, as well as certain
+## "other"-prefixed plugins on that partner's builds, if any.
+##
+## - To find the overall list of official stock plugins, use no arguments.
+## - To find the list of plugins considered official for a specific profile,
+##   specify the major distribution type (ie. as returned by majorDistribValue())
+##   as 'distribtype'. The result will be the full list of stock plugins, 
+##   together with any distribution-specific "other"-prefixed plugins that need
+##   to be included.
+## - To restrict plugins to specific search engines, supply the prefix names
+##   for the search engines as 'pluginprefix' (eg. pluginprefix = "yahoo").
+##   The prefix will also be checked against the distribtype, if one is supplied.
+##   If the distribtype has the same prefix, its plugin names will also be 
+##   included. 
+searchNamesOfficialAndPartner <- function(distribtype = NULL, prefix = NULL) {
+    ## First find the list of official stock plugins, optionally restricted
+    ## by prefix.
+    searchnames <- if(length(prefix) == 0) { 
+        official.plugins 
+    } else {
+        patterns <- sprintf("^%s", prefix)
+        unlist(lapply(patterns, grep, official.plugins, value = TRUE))
+    }
+    if(length(distribtype) == 0) return(searchnames)
+    
+    ## Then add plugins coming from relevant partner distributions.
+    ## Add any official plugins corresponding to distribtype.
+    ## If we are using the prefix restriction, only include plugins from 
+    ## distributions related to that prefix.
+    if(length(prefix) > 0) {
+        patterns <- sprintf("^%s", prefix)
+        distribtype <- unlist(lapply(patterns, grep, distribtype, value = TRUE))
+    }
+    partnersearch <- unlist(partner.plugins[distribtype], use.names = FALSE)
+    append(searchnames, sprintf("other-%s", partnersearch))
+}
                                             
