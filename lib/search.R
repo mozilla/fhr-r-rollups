@@ -143,14 +143,18 @@ searchCountValues <- function(searchday, provider.grouping = identity,
 ##  - FALSE or NULL, meaning that counts will not be split across this dimension
 ##    (ie. all values belong to a single, trivial group)
 ##  - A function which maps a vector of identifiers to group names (or NA)
-##  - A list whose names are the group names, and whose elements are functions
-##    mapping a vector of identifiers to a vector of booleans indicating whether
-##    each should be assigned to that group. Identifiers that are not assigned
-##    to any group by any of these functions will be assigned to a group named NA.
-##    To specify another name for this "unassigned" group, the list should 
-##    contain an entry NA whose name is the desired group name. An example of 
-##    this form is: 
-##      list(yahoo = function() {...}, google = function() {...}, other = NA).
+##  - A list whose names are the group names, and whose elements are
+##    either functions or character vectors used to determine membership in
+##    the named group. For vectors, searches are assigned to the group if the
+##    identifier is listed in the vector. Functions should map a vector of 
+##    identifiers to a vector of booleans indicating whether each should be 
+##    assigned to that group. 
+##    Identifiers that are not assigned to any group by any of these functions 
+##    will be assigned to a group named NA. To specify another name for this 
+##    "unassigned" group, the list should contain an NA entry whose name is the
+##    desired group name. An example of this form is: 
+##      list(yahoo = function(v) { grepl("^yahoo", v) }, google = "google", 
+##          other = NA).
 ##  An input in any different form generates an error.
 ## 
 ## By default, any searches assigned to a group labelled NA will be treated
@@ -207,6 +211,10 @@ groupingFunction <- function(grouping) {
     if(is.null(grouping) || identical(grouping, FALSE)) return(NULL)
     if(is.function(grouping)) return(grouping)
     if(is.list(grouping)) {
+        if(!all(unlist(lapply(grouping, function(g) { 
+            identical(g, NA) || is.function(g) || is.character(g) 
+        }))))
+            stop("Invalid grouping argument.")
         ## First check if we have a label for the NA group. 
         nagroup <- is.na(grouping)
         nagroupname <- if(any(nagroup)) {
@@ -214,24 +222,28 @@ groupingFunction <- function(grouping) {
             grouping <- grouping[!nagroup]
             n
         } else { NA }
-        fun <- eval(bquote(function(vals) {
-            ## Assign values to each group as appropriate.
-            ## Keep track of unassigned values.
-            unassigned <- rep_len(TRUE, length(vals))
-            for(groupname in names(groupmembers)) {
-                incurrentgroup <- groupmembers[[groupname]](vals)
-                if(!any(incurrentgroup)) next
-                vals[incurrentgroup] <- groupname
-                unassigned <- unassigned & !incurrentgroup
-                if(!any(unassigned)) break
-            }
-            if(any(unassigned)) vals[unassigned] <- .(unassignedgroupname)
-            vals
-        }, list(unassignedgroupname = nagroupname)))
-        fun.env <- new.env(parent = globalenv())
-        assign("groupmembers", grouping, envir = fun.env)
-        environment(fun) <- fun.env
-        return(fun)
+        ## Convert character vector inputs to functions for checking membership.
+        grouping <- lapply(grouping, function(g) {
+            if(is.character(g)) { 
+                function(vals) { vals %in% g } 
+            } else { g }
+        })
+        return((function(groupmembers) {
+            eval(bquote(function(vals) {
+                ## Assign values to each group as appropriate.
+                ## Keep track of unassigned values.
+                unassigned <- rep_len(TRUE, length(vals))
+                for(groupname in names(groupmembers)) {
+                    incurrentgroup <- groupmembers[[groupname]](vals)
+                    if(!any(incurrentgroup)) next
+                    vals[incurrentgroup] <- groupname
+                    unassigned <- unassigned & !incurrentgroup
+                    if(!any(unassigned)) break
+                }
+                if(any(unassigned)) vals[unassigned] <- .(unassignedgroupname)
+                vals
+            }, list(unassignedgroupname = nagroupname)))
+        })(grouping))
     }
     ## At this point, the input doesn't match any of the valid forms.
     stop("Invalid grouping argument.")
