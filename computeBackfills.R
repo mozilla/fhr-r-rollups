@@ -126,6 +126,24 @@ for( pi in (seq_along(pathnames))){
                                    ,read    = FALSE
                                    ,param   = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
     
+    print(waitForJobs(p,pi,length(pathnames),list(zweek,zmonth)))
+    toText("rweek",o="tweek")
+    toText("rmonth",o="tmonth")
+}
+
+for( pi in (seq_along(pathnames))){
+    p               <- pathnames[pi]
+    dt              <- extract.date(p)
+    fileOriginDate  <- dt$date
+    rhmkdir(sprintf("%s/%s", store.path,dt$name))
+    hdfs.setwd(sprintf("%s/%s", store.path,dt$name))
+
+    print(sprintf("Processing for %s", dt$name))
+    timeperiod      <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"), end   = strftime(fileOriginDate-7,"%Y-%m-%d"))
+    PARAM           <- list(needstobetagged=TRUE,whichdate=strftime(dt$date,"%Y%m%d"),statcomputer=computeAllStats,usedt=FALSE)
+    
+    input.path      <- sqtxt(sprintf("%s/1pct/",p))
+
     ## Daily Summary
     timeChunksDay <- dayTimeChunk(timeperiod$start, timeperiod$end)
     W <- whichDays[i==pi,]
@@ -136,20 +154,15 @@ for( pi in (seq_along(pathnames))){
                     ,debug='collect'
                     ,output='rday'
                     ,mon.sec=0
-                    ,jobname = sprintf("Daily [ %s %s/%s ]",dt$name,pi, length(pathnames))
+                    ,jobname = sprintf("Day [ %s %s/%s ]",dt$name,pi, length(pathnames))
                     ,setup=setup
                     ,shared = shared.files
                     ,read=FALSE
                     ,mapred=list(mapred.task.timeout=0)
                     ,param=list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
-    print(waitForJobs(p,pi,length(pathnames),list(zweek,zmonth,zday)))
-
-    toText("rweek",o="tweek")
-    ## toText("rday",o="tday")
-    toText("rmonth",o="tmonth")
-
+    print(waitForJobs(p,pi,length(pathnames),list(zday)))
+    toText("rday",o="tday")
 }
-
 
 email("ALL BACKFILLS DONE")
 
