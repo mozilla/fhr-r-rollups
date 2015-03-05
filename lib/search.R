@@ -112,10 +112,13 @@ searchCountValues <- function(searchday, provider.grouping = identity,
     groupby <- lapply(groupby, factor, exclude = NULL)
     searchcounts <- tapply(searchday$count, groupby, sum, simplify = TRUE)
     if(removeNA) {
-        toremove <- lapply(dimnames(searchcounts), is.na)
-        searchcounts <- do.call("[", c(searchcounts, toremove, drop = FALSE))
+        tokeep <- lapply(dimnames(searchcounts), function(n) { !is.na(n) })
+        searchcounts <- do.call("[", c(list(searchcounts), tokeep, drop = FALSE))
         if(length(searchcounts) == 0) return(NULL)
     }
+    ## In the 2-d case, fill in NA entries with zeros (for missing combinations).
+    if(length(dim(searchcounts)) == 2)
+        searchcounts[is.na(searchcounts)] <- 0
     searchcounts
 }
 
@@ -204,14 +207,15 @@ groupingFunction <- function(grouping) {
         ## First check if we have a label for the NA group. 
         nagroup <- is.na(grouping)
         nagroupname <- if(any(nagroup)) {
+            n <- names(grouping)[nagroup][[1]] 
             grouping <- grouping[!nagroup]
-            names(grouping)[nagroup][[1]] 
+            n
         } else { NA }
         fun <- eval(bquote(function(vals) {
             ## Assign values to each group as appropriate.
             ## Keep track of unassigned values.
             unassigned <- rep_len(TRUE, length(vals))
-            for(groupname in groupmembers) {
+            for(groupname in names(groupmembers)) {
                 incurrentgroup <- groupmembers[[groupname]](vals)
                 if(!any(incurrentgroup)) next
                 vals[incurrentgroup] <- groupname
@@ -219,14 +223,18 @@ groupingFunction <- function(grouping) {
                 if(!any(unassigned)) break
             }
             if(any(unassigned)) vals[unassigned] <- .(unassignedgroupname)
+            vals
         }, list(unassignedgroupname = nagroupname)))
-        fun.env <- new.env(parent = emptyenv())
+        fun.env <- new.env(parent = globalenv())
         assign("groupmembers", grouping, envir = fun.env)
         environment(fun) <- fun.env
         return(fun)
     }
     ## At this point, the input doesn't match any of the valid forms.
-    stop("Invalid grouping argument".)
+    stop("Invalid grouping argument.")
 }
 
-                                                    
+##----------------------------------------------------------------
+
+
+                                            
