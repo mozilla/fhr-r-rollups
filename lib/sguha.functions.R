@@ -1,3 +1,4 @@
+isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0 || is.na(s)) subcode else s
 winVerCheck <- function(ver,keepverforothers=FALSE){
     ## http://www.msigeek.com/442/windows-os-version-numbers
     keepverforothers=eval(keepverforothers)
@@ -14,9 +15,18 @@ winVerCheck <- function(ver,keepverforothers=FALSE){
         if(keepverforothers) return(sprintf("winOther_%s",s)) else ("winOthers")
   })
 }
-WNVer <- winVerCheck(keepverforothers=TRUE)
-isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0 || is.na(s)) subcode else s
-                                   
+getWindowsVersionAsString <- winVerCheck(keepverforothers=TRUE)
+
+getOSXVersionAsString <- function(s){
+    s <- isn(s)
+    if(grepl("^(10)",s)) return("darwinSnowLeopard")
+    if(grepl("^(11)",s)) return("darwinLion")
+    if(grepl("^(12)",s)) return("darwinMountainLion")
+    if(grepl("^(13)",s)) return("darwinMavericks")
+    if(grepl("^(14)",s)) return("darwinYosemite")
+    return(sprintf("darwinOthers_%s", s))
+}
+    
 getProfileCreationDate <- function(b){
     profileCrDate <- strftime(as.Date(
         b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), 

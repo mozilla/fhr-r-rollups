@@ -48,8 +48,10 @@ getDimensions <- function(b){
     os       <- isn(b$geckoAppInfo$os, "missing")
     osdetail <- local({
         if(os=="WINNT"){
-            WNVer(b$data$last$org.mozilla.sysinfo.sysinfo$version)
-        }else os
+            getWindowsVersionAsString(b$data$last$org.mozilla.sysinfo.sysinfo$version)
+        }else if(os=="Darwin"){
+            getOSXVersionAsString(b$data$last$org.mozilla.sysinfo.sysinfo$version)
+        } else os
     })
     distribution <- isn(b$data$last$org.mozilla.appInfo.appinfo$distributionID,
         "missing")
