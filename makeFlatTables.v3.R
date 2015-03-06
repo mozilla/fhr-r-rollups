@@ -109,26 +109,35 @@ computeNumSessions <- function(activity) activity$nsessions
 
 ### Search counts ###
 
-## Total # SAP searches.
-computeTotalSearches <- function(searchcounts) sum(searchcounts)
-
-## Searches by provider (through official search plugins).
-computeYahooSearches <- function(searchcounts) {
-    if("yahoo" %in% names(searchcounts)) searchcounts[["yahoo"]] else 0
-} 
-
-computeGoogleSearches <- function(searchcounts) {
-    if("google" %in% names(searchcounts)) searchcounts[["google"]] else 0
+## Total # SAP searches for specified groups.
+computeSearchCounts <- function(searchcounts, groups = NULL) {
+    if(length(searchcounts) == 0) return(0)
+    if(length(groups) > 0) {
+        searchcounts <- searchcounts[names(searchcounts) %in% groups]
+    }
+    sum(searchcounts)
 }
 
-computeBingSearches <- function(searchcounts) {
-    if("bing" %in% names(searchcounts)) searchcounts[["bing"]] else 0
-}
+# computeTotalSearches <- function(searchcounts) sum(searchcounts)
 
-## Searches through any official plugins.
-computeOfficialSearches <- function(officialsearchcounts) {
-    if(length(officialsearchcounts) > 0) officialsearchcounts[[1]] else 0
-}
+# ## Searches by provider (through official search plugins).
+# computeYahooSearches <- function(searchcounts) {
+    # if("yahoo" %in% names(searchcounts)) searchcounts[["yahoo"]] else 0
+# } 
+
+# computeGoogleSearches <- function(searchcounts) {
+    # if("google" %in% names(searchcounts)) searchcounts[["google"]] else 0
+# }
+
+# computeBingSearches <- function(searchcounts) {
+    # if("bing" %in% names(searchcounts)) searchcounts[["bing"]] else 0
+# }
+
+# ## Searches through any official plugins.
+# computeOfficialSearches <- function(searchcounts) {
+    # if(length(searchcounts) == 0) return(0)
+    
+# }
 
 #---------------------------------------
 
@@ -198,32 +207,33 @@ computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c
 ## Each of these stats will be added up within segments. 
 computeAllStats <- function(days,control){
     c(
-        tTotalProfiles                      = isn(computeTotalProfiles(control$profileCrDate, control$timeChunk),0),
-        tExistingProfiles                   = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
-        tNewProfiles                        = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
-        tActiveProfiles                     = isn(computeActives(days),0),
-        tActiveDays                         = isn(computeActiveDays(days),0),
-        tTotalSeconds                       = computeTotalSeconds(control$activity),
-        tActiveSeconds                      = computeActiveSeconds(control$activity),
-        tNumSessions                        = computeNumSessions(control$activity),
-        tCrashes                            = isn(computeTotalCrashes(days),0),
-        tTotalSearch                        = computeTotalSearches(control$groupedsearch),
-        tGoogleSearch                       = computeGoogleSearches(control$groupedsearch),
-        tYahooSearch                        = computeYahooSearches(control$groupedsearch),
-        tBingSearch                         = computeBingSearches(control$groupedsearch),
-        tOfficialSearch                     = computeOfficialSearches(control$officialsearch),
-        tIsDefault                          = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
-        tIsActiveProfileDefault             = isn(computeIsActiveProfileDefault(days),0),
-        t5outOf7                            = isn(compute5outOf7(days, 
-                                                  alldays     = control$jsObject$data$days,
-                                                  granularity = control$granularity,
-                                                  timeChunk   = control$timeChunk),0),
-        tChurned                            = isn(computeChurn(alldays     = control$jsObject$data$days, 
-                                                               timeChunk   = control$timeChunk),0),
-        tHasUP                              = isn(computeIfProfileHasUp(alldays     = control$jsObject$data$days,
-                                                                        timeChunk   = control$timeChunk,
-                                                                        b           = control$jsObject),0)
-        )
+        tTotalProfiles          = isn(computeTotalProfiles(control$profileCrDate, control$timeChunk),0),
+        tExistingProfiles       = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
+        tNewProfiles            = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
+        tActiveProfiles         = isn(computeActives(days),0),
+        tActiveDays             = isn(computeActiveDays(days),0),
+        tTotalSeconds           = computeTotalSeconds(control$activity),
+        tActiveSeconds          = computeActiveSeconds(control$activity),
+        tNumSessions            = computeNumSessions(control$activity),
+        tCrashes                = isn(computeTotalCrashes(days),0),
+        tTotalSearch            = computeSearchCounts(control$searchcounts),
+        tGoogleSearch           = computeSearchCounts(control$searchcounts, "google"),
+        tYahooSearch            = computeSearchCounts(control$searchcounts, "yahoo"),
+        tBingSearch             = computeSearchCounts(control$searchcounts, "bing"),
+        tOfficialSearch         = computeSearchCounts(control$searchcounts,
+                                    c("google", "yahoo", "bing", "otherofficial")),
+        tIsDefault              = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
+        tIsActiveProfileDefault = isn(computeIsActiveProfileDefault(days),0),
+        t5outOf7                = isn(compute5outOf7(days, 
+                                    alldays     = control$jsObject$data$days,
+                                    granularity = control$granularity,
+                                    timeChunk   = control$timeChunk),0),
+        tChurned                = isn(computeChurn(alldays   = control$jsObject$data$days, 
+                                    timeChunk = control$timeChunk),0),
+        tHasUP                  = isn(computeIfProfileHasUp(alldays   = control$jsObject$data$days,
+                                     timeChunk = control$timeChunk,
+                                     b         = control$jsObject),0)
+    )
 }
     
 #---------------------------------------
@@ -247,25 +257,24 @@ summaries <- function(a,b){
         ## Activity measures aggregated over time chunk.
         activity       <- totalActivity(days)
         ## Search counts over time chunk by provivder.
-        searchcounts   <- allSearches(days)
-        grouping  <- list(yahoo = yahoo.searchnames(bdim$distribtype),
-                            google = google.searchnames(bdim$distribtype),
-                            bing = bing.searchnames(bdim$distribtype))
-        groupedsc      <- totalSearchCounts(searchcounts, provider = grouping
-                                            sap = FALSE, preprocess = FALSE)
-        officialsc     <- totalSearchCounts(searchcounts, 
-            provider = list(official = official.searchnames(bdim$distribtype)),
-            sap = FALSE, removeNA = TRUE, preprocess = FALSE)
+        grouping <- list(yahoo = yahoo.searchnames(bdim$distribtype),
+                        google = google.searchnames(bdim$distribtype),
+                        bing = bing.searchnames(bdim$distribtype))
+        ## Add a group for searches that use official plugins but none of the above.
+        officialsn <- official.searchnames(bdim$distribtype)
+        grouping[["otherofficial"]] <- 
+            officialsn[!(officialsn %in% unlist(grouping, use.names = FALSE))]
+        grouping[["other"]] <- NA
+        searchcounts <- totalSearchCounts(days, provider = grouping, sap = FALSE)
         
         ## Your custom code can be here (in statcomputer):
         mystats        <- PARAM$statcomputer(days, control=list(
-            jsObject       = b,
-            profileCrDate  = profileCrDate, 
-            granularity    = PARAM$granularity, 
-            timeChunk      = timeChunk,
-            activity       = activity,
-            groupedsearch  = groupedsc,
-            officialsearch = officialsc)
+            jsObject      = b,
+            profileCrDate = profileCrDate, 
+            granularity   = PARAM$granularity, 
+            timeChunk     = timeChunk,
+            activity      = activity,
+            searchcounts  = searchcounts)
         )
         if(PARAM$usedt){
             rhcollect(sample(1:1000,1), 
