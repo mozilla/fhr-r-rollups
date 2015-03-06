@@ -99,13 +99,16 @@ isMozillaDistrib <- function(distrib) {
 }
 
 ## If the distribution is considered a partner build, find the partner name.
-## Distributions from expired partnerships have the suffix "|expired" appended.
+## Distributions from expired partnerships get the suffix "|expired" appended.
 ## Otherwise, return "other".
-## partner.list is a lookup table mapping distribution IDs
-## to corresponding partner name, including both current and expired partners. 
+## partner.list.* is a lookup table mapping distribution IDs
+## to corresponding partner name,
+## for both current and expired partners. 
 getPartnerName <- function(distrib) {
-    if(distrib %in% names(partner.list)) 
-        return(partner.list[[distrib]])
+    if(distrib %in% names(partner.list.current)) 
+        return(partner.list.current[[distrib]])
+    if(distrib %in% names(partner.list.expired))
+        return(sprintf("%s|expired", partner.list.expired[[distrib]]))
     "other"
 }
 
