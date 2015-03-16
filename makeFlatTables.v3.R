@@ -17,7 +17,7 @@ weekTimeChunk <- function(fr,to){
 monthTimeChunk <- function(fr,to){
     ## round 'fr' down to beginning of month and
     ## round 'to' to beginning of the month
-    fr1 <- as.Date(as.yearmon(fr, "%Y-%m-%d"), frac = 0)
+    fr1 <- as.Date(as.yearmon(as.Date(fr)+32, "%Y-%m-%d"), frac = 0)
     to1 <- as.Date(as.yearmon(to, "%Y-%m-%d"), frac = 0)
     lapply(seq(fr1,to1, by='month'),function(s){
         c(start = strftime(s,"%Y-%m-%d"), end = strftime(as.Date(as.yearmon(s, "%Y-%m-%d"), frac = 1),"%Y-%m-%d"))
@@ -84,6 +84,9 @@ getStandardizedDimensions <- function(dims) {
 
 ## Whether profile was active in time chunk.
 computeActives          <- function(days)    if(length(days)>0) 1 else 0
+
+## whethere profile was inactive in time chunk
+computeInActives          <- function(days)    if(length(days)==0) 1 else 0
 
 ## Whether profile was created prior to time chunk.
 computeExistingProfiles <- function(profileCrDate,timeChunk) if(profileCrDate < timeChunk['start']) 1 else 0
@@ -213,6 +216,7 @@ computeAllStats <- function(days,control){
         tExistingProfiles       = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
         tNewProfiles            = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
         tActiveProfiles         = isn(computeActives(days),0),
+        tInActiveProfiles       = isn(computeInActives(days),0),
         tActiveDays             = isn(computeActiveDays(days),0),
         tTotalSeconds           = computeTotalSeconds(control$activity),
         tActiveSeconds          = computeActiveSeconds(control$activity),

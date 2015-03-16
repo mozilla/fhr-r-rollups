@@ -34,16 +34,28 @@ for(x in c( "day","week",'month')){
            dbSendUpdate(d$con,sprintf( "DELETE FROM fhr_rollups_%s_base  where snapshot = '%s'", G(x), fileOrigin))
            ## Import this new data
            system(sprintf("rm -rf /tmp/%s-%s",exceptionsFile,x))
-           sql <- sprintf("COPY fhr_rollups_%s_base  FROM LOCAL '%s' delimiter '\t' EXCEPTIONS '/tmp/%s-%s' REJECTED DATA '/tmp/%s-%s' ;", G(x) , t, exceptionsFile, x,badDataFile,x)
+           sql <- sprintf("COPY fhr_rollups_%s_base FROM LOCAL '%s' delimiter '\t' EXCEPTIONS '/tmp/%s-%s' REJECTED DATA '/tmp/%s-%s' ;", G(x) , t, exceptionsFile, x,badDataFile,x)
            print(sql)
-           err <- if(file.exists(sprintf("/tmp/%s-%s",exceptionsFile,x))) tryCatch(strsplit(system(sprintf("wc -l  /tmp/%s-%s",exceptionsFile,x),intern=TRUE)," ")[[1]][[1]],error=function(e) 0) else err <- 0
-           if(err>0) stop("Errors parsing")
            dbSendUpdate(d$con, sql)
+           err <- if(file.exists(sprintf("/tmp/%s-%s",exceptionsFile,x))) tryCatch(strsplit(system(sprintf("wc -l  /tmp/%s-%s",exceptionsFile,x),intern=TRUE)," ")[[1]][[1]],error=function(e) 0) else err <- 0
+           if(err>0) {
+               print(sprintf("Errors in /tmp/%s-%s file read from %s",exceptionsFile,x,t))
+               stop("Errors parsing")
+           }
         }
     }
 }
 
 
+do=odbc()
+dn=odbc("fhr")
+
+an=data.table(dn$q("Select timeStart, snapshot, sum(tInactiveProfiles) as a from fhr_rollups_monthly_base group by timeStart, snapshot order by timeStart, snapshot"))
+ao=data.table(do$q("Select timeStart, snapshot_date as snapshot, sum(tTotalSec/3600) as a from fhr_rollups_month_view where prodVersion='ANY' group by timeStart, snapshot_date order by timeStart, snapshot_date"));
+ao$snapshot <- as.character(ao$snapshot)
+an <- an[timeStart %in% intersect(an$timeStart, ao$timeStart),]
+ao <- ao[timeStart %in% intersect(an$timeStart, ao$timeStart),]
+pdf("h.pdf",width=11); xyplot( an$a  ~ as.Date(timeStart), data=an,type='b', auto.key=TRUE);dev.off()
 ###############
 ## one time
 ###############

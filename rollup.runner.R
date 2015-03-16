@@ -33,23 +33,15 @@ waitForJobs <- function(L){
     }
 }
 
-################################################################################
-## convert files to text
-################################################################################
-toText <- function(i,o){
-    y <- rhwatch(map=function(a,b){    rhcollect(NULL, c(a,b))    },reduce=0, input=i
-                 ,output=rhfmt(type='text', folder=o,writeKey=FALSE,field.sep="\t",stringquote=""),read=FALSE)
-    a <- rhls(o)$file
-    rhdel(a[!grepl("part-",a)])
-    rhchmod(o,"777")
-    o
-}
     
 
 #########################################################################################
 ## Running
 #########################################################################################
 setwd("~/fhr-r-rollups")
+source("lib/search.R",keep.source=FALSE)
+source("lib/profileinfo.R",keep.source=FALSE)
+source("lib/activity.R",keep.source=FALSE)
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 

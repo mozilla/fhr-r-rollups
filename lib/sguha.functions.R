@@ -71,3 +71,15 @@ jobHandler <- function(y,pctcut=2,errorVar="jobErrorVar"){
         rvalue
     })
 }
+
+## Converts the sequence files to text files for Vertica to import
+toText <- function(i,o){
+    y <- rhwatch(map=function(a,b){
+        b <- formatC(b, format="f",digits=0)
+        rhcollect(NULL, c(a,b))    },reduce=0, input=i
+                 ,output=rhfmt(type='text', folder=o,writeKey=FALSE,field.sep="\t",stringquote=""),read=FALSE)
+    a <- rhls(o)$file
+    rhdel(a[!grepl("part-",a)])
+    rhchmod(o,"777")
+    o
+}

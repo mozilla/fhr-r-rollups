@@ -1,5 +1,8 @@
 setwd("~/fhr-r-rollups")
 
+source("lib/search.R",keep.source=FALSE)
+source("lib/profileinfo.R",keep.source=FALSE)
+source("lib/activity.R",keep.source=FALSE)
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
@@ -31,7 +34,7 @@ waitForJobs <- function(s,i,outof,L){
     }))
     RT <- rbindlist(resusText)
     if(nrow(RT)>0){
-        majorError <- c("no major errors", "MAJOR ERRORS!!")[ any(grepl("UserKill",RT$state))+1 ]
+        majorError <- c("no major errors", "MAJOR ERRORS!!")[ any(grepl("(Failed|UserKill)",RT$state))+1 ]
         embody <- paste(c(hdfs.getwd(),"\n%s\n",majorError,capture.output(print(RT))), collapse="\n")
         email(subj=sprintf("BACKFILL FOR %s [%s/%s] done(%s)",s,i,outof,majorError), body=embody)
         list(TRUE,embody)
@@ -40,14 +43,6 @@ waitForJobs <- function(s,i,outof,L){
     }
 }
 
-toText <- function(i,o){
-    y <- rhwatch(map=function(a,b){    rhcollect(NULL, c(a,b))    },reduce=0, input=i
-                 ,output=rhfmt(type='text', folder=o,writeKey=FALSE,field.sep="\t",stringquote=""),read=FALSE)
-    a <- rhls(o)$file
-    rhdel(a[!grepl("part-",a)])
-    rhchmod(o,"777")
-    o
-}
     
 
 ## Recreate the data
@@ -111,7 +106,7 @@ for( pi in (seq_along(pathnames))){
                                ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
 
     ## Monthly Summary
-    timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
+    (timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end))
     W <- whichMonths[i==pi,]
     timeChunksMonth <- Filter(function(s) if(!is.na(W[,rightmost]) && s['start'] >= W[,B]
                           && (   (W[,rightmost]==TRUE &&  s['start'] <=W[,E])
@@ -126,11 +121,13 @@ for( pi in (seq_along(pathnames))){
                                    ,read    = FALSE
                                    ,param   = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
     
-    print(waitForJobs(p,pi,length(pathnames),list(zweek,zmonth)))
+    print(waitForJobs(p,pi,length(pathnames),list(zmonth,zweek)))
+    Sys.sleep(5)
     toText("rweek",o="tweek")
     toText("rmonth",o="tmonth")
 }
 
+BACK <- 90
 for( pi in (seq_along(pathnames))){
     p               <- pathnames[pi]
     dt              <- extract.date(p)
@@ -197,3 +194,11 @@ email("ALL BACKFILLS DONE")
 ##     ## toText("rday",o="tday")
 ## }
 
+
+
+## an <- data.table(dn$q("select timeStart, sum(tActiveProfiles) as anew from fhr_rollups_monthly_base where name='Firefox' and vendor='Mozilla' group by timeStart order by timeStart"))
+## ao <- data.table(do$q("select timeStart, sum(tActiveProfiles) as aold from fhr_rollups_month_view where prodname='Firefox' and vendor='Mozilla' and prodVersion='ANY' group by timeStart order by timeStart"))
+## a <- merge(an,ao, by="timeStart")
+
+
+an <- data.table(dn$q("select timeStart, sum(tIsDefault) as d, sum(tIsActiveProfileDefault) as ad, sum(tActiveProfiles) as a, sum(tTotalProfiles) as t from fhr_rollups_weekly_base where name='Firefox' and vendor='Mozilla' group by timeStart order by timeStart"))
