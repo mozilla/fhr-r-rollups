@@ -104,8 +104,8 @@ uday            <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
 print(waitForJobs(list(uday,umonth, uweek)))
 
 toText("rweek"  ,o="tweek")
-toText("rday"   ,o="tday")
 toText("rmonth" ,o="tmonth")
+toText("rday"   ,o="tday")
 
 
 ################################################################################
@@ -138,6 +138,7 @@ for(x in c( "day","week",'month')){
     ## Delete data from previous rollup run to remove duplicates
     maxPreviousSnapshot <- as.character(d$q(sprintf("select max(snapshot) from fhr_rollups_%s_base", G(x))))
     ## Keep only data before this date from previous snapshot
+    (   X <- data.frame(data.table(d$q(sprintf("select snapshot, min(timeStart) as ms, max(timeStart) as mas from fhr_rollups_%s_base  group by snapshot order by snapshot,ms",G(x))))))
     (    data.frame(data.table(d$q(sprintf("select distinct(timeStart) as v from fhr_rollups_%s_base where snapshot='%s'",G(x),maxPreviousSnapshot)))[order(v),]))
     (keepdates <- range(unlist(list(day=timeChunksDay, week=timeChunksWk,month=timeChunksMonth)[[x]])))
     (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),maxPreviousSnapshot, keepdates[1]))
