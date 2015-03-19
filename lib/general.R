@@ -18,9 +18,9 @@ updateValues <- function(days) {
     if(length(days) == 0) return(NULL)
     updates <- unlist(lapply(days, function(d) {
         vu <- d$org.mozilla.appInfo.versions
-        if(length(vu) == 0) return(NULL)
         ## Handle different field versions. 
         vu <- if(identical(vu[["_v"]], 1)) vu$version else vu$appVersion
+        if(length(vu) == 0) return(NULL)
         ## If there are multiple versions, use the latest one. 
         if(length(vu) > 1) vu <- vu[[length(vu)]]
         ## Simple validity check.
