@@ -173,7 +173,7 @@ v34UpdateInfo <- function(days, pcd, targeted,
             reason = "updates"
         )
         ## Check previous search default if necessary.
-        if(length(.prevdef) > 0) {
+        if(info$new.sdef && length(.prevdef) > 0) {
             ## Only look at dates prior to the date of update.
             sdates <- areDatesInPeriod(names(days), 
                                 to = as.character(as.Date(info$ver.date) - 1))
@@ -183,7 +183,7 @@ v34UpdateInfo <- function(days, pcd, targeted,
                 ## Otherwise, think of it as missing information:
                 ## The previous value of new.sdef is the best guess.
                 if(!is.na(sdef)) {
-                    info$new.sdef <- info$new.sdef && sdef %in% .prevdef
+                    info$new.sdef <- sdef %in% .prevdef
                     info$reason = "updates,prevdef"
                 }
             }
@@ -194,10 +194,10 @@ v34UpdateInfo <- function(days, pcd, targeted,
     ## No updates to a version of interest were found. 
     ## Conclude that the profile is still on an older version.
     list(
-        has.yv = FALSE,
-        yv.status = "older",
-        yv.date = NA,
-        ychange = FALSE,
+        has.ver = FALSE,
+        ver.status = "older",
+        ver.date = NA,
+        new.sdef = FALSE,
         reason = "noupdates"
     )
 }
@@ -258,6 +258,47 @@ uitourInfo <- function(days) {
     
     list(date = names(uit)[[1]], treatment = thetmt, action = unique(actions))
 }
+
+## Returns a function that generates a list similar to that returned by
+## v34UpdateInfo() for any given date, indicating whether the profile 
+## had updated to a version of interest or gotten a new default by that date.
+##
+## This is intended to provide update information for data tables collected
+## at the daily level rather than the profile level.
+## 
+## Input is the profile's v34UpdateInfo() value.
+## The list returned by the created function will have the following elements:
+## - date: the current date on which the function is called
+## - on.ver: whether the profile was on a version of interest by this date
+## - ver.status: same as the supplied value for the profile
+## - new.sdef: same as the supplied value for the profile
+## - reason: same as the supplied value for the profile
+dailyUpdateInfoFunction <- function(updateinfo) {
+    ## If the profile never updated to a version of interest, 
+    ## the output is trivial.
+    if(!updateinfo$has.ver) return(
+        function(currentdate) {
+            list(
+                date = currentdate, 
+                on.ver = FALSE,
+                ver.status = updateinfo$ver.status,
+                new.sdef = updateinfo$new.sdef,
+                reason = updateinfo$reason
+            )
+        }
+    )
+    ## Otherwise need to check current date against update date.
+    function(currentdate) {
+        list(
+            date = currentdate, 
+            on.ver = currentdate >= updateinfo$ver.date,
+            ver.status = updateinfo$ver.status,
+            new.sdef = updateinfo$new.sdef,
+            reason = updateinfo$reason
+        )
+    }
+}
+
 
 
 
