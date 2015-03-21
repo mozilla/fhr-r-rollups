@@ -22,7 +22,11 @@
 ###  it may be better to cache the output of allSearches() first and 
 ###  use 'preprocess = FALSE'.
 ###  
-###  The second section gives some convenience functions for finding
+###  The second section contains functions for computing daily default
+###  search engines, either read from the recorded field, or inferred
+###  from searches made on that day.
+###  
+###  The third section gives some convenience functions for finding
 ###  search provider names that correspond to official partner searches
 ###  and major search engines. These can be used to group searches
 ###  in the SearchCounts functions.    
@@ -114,7 +118,7 @@ allSearches <- function(days) {
 ## for which the group labels for either provider or sap is NA. By default,
 ## NA groups are not removed and are treated the same as the other groups.
 ##
-## The retun value depends on which of the provider and SAP dimensions are used
+## The return value depends on which of the provider and SAP dimensions are used
 ## for counting. If both grouping arguments are NULL, the result is a scalar 
 ## count of overall total searches for that day. If one grouping argument is 
 ## NULL, the result is a named vector mapping group names to search counts for 
@@ -272,6 +276,193 @@ groupingFunction <- function(grouping) {
     ## At this point, the input doesn't match any of the valid forms.
     stop("Invalid grouping argument.")
 }
+
+
+##----------------------------------------------------------------
+
+## Returns a vector mapping dates to the default search engine recorded on 
+## that day. Dates with no measurement will not be included in the output.
+## If no default engine measurements are found, returns NULL.
+dailyDefaultSearchEngines <- function(days) {
+    defaults <- unlist(lapply(days, function(d) {
+        d$org.mozilla.searches.engines$default
+    }))
+    if(length(defaults) == 0) return(NULL)
+    ## Remove any special values. 
+    specialvals <- defaults %in% c("NONE", "UNDEFINED")
+    if(all(specialvals)) return(NULL)
+    if(any(specialvals)) return(defaults[!specialvals])
+    defaults
+}
+
+## Infers the default search engine setting for FHR active dates.
+## 
+## Returns a vector mapping dates to the inferred default search engine name 
+## on that date, for each date in the supplied data$days list.
+## If 'info' is TRUE, the output is a list rather than a vector, with a list
+## for each day with elements:
+## - default: the default search engine name
+## - inferred: whether the search default was inferred from search counts
+## - sameday: whether the search default is based on information observed 
+##            on the current day.  
+## If 'lastonly' is TRUE, returns the single element corresponding to the most 
+## recent date in the 'days' list (a string if 'info' is FALSE, and a list 
+## otherwise).
+## 
+## If the sequence of default search engines has been extracted separately
+## using dailyDefaultSearchEngines(), or the raw searches have been processed
+## using allSearches(), these can be passed directly to avoid reprocessing,
+## using 'defaults' and 'searches' respectively.
+##
+## The default search engine on a given day is inferred as follows:
+## - if there are default search engines recorded on or before the given day, 
+##   retain the most recent one.
+## - if there are search counts recorded on or before the given day, retain the
+##   most recent such day. The default search engine is inferred from the search
+##   counts as the most frequently used (raw) search engine on that day, with
+##   ties broken at random.
+## - if both a recorded default and a default inferred from search counts are
+##   available, use the inferred default if it is more recent than the recorded
+##   one, and the recorded one otherwise.
+## - if only one of the two is available, use that
+## - if neither are available, the result is NA.
+inferDefaultSearchEngine <- function(days, lastonly = FALSE, info = FALSE,
+                                            defaults = NULL, searches = NULL) {
+    if(length(days) == 0) return(NULL)
+    if(missing(defaults)) defaults <- dailyDefaultSearchEngines(days)
+    if(missing(searches)) searches <- allSearches(days)
+    dates <- names(days)
+    
+    ## Function to look up most recent date prior to a given date.
+    mostrecentprior <- function(currentdate, referencedates) {
+        priordates <- referencedates <= currentdate
+        if(any(priordates)) max(referencedates[priordates]) else NULL
+    }
+    
+    ## Set methodology according to which sources of information are available.    
+    ## Function to compute the default for a given day.
+    inferdefault <- if(length(searches) > 0) {
+        ## Compute the inferred default on each search day.
+        searches <- inferDailyDefaultFromSearches(searches)
+        if(length(defaults) > 0) {
+            ## Have information for both.
+            function(d) {
+                defaultdate <- mostrecentprior(d, names(defaults))
+                searchdate <- mostrecentprior(d, names(searches))
+                if(is.null(defaultdate)) {
+                    ## No recorded default.
+                    ## Use inferred, if present.
+                    if(is.null(searchdate)) {
+                        list(default = NA,
+                            inferred = FALSE,
+                            sameday = FALSE)
+                    } else {
+                        list(default = searches[[searchdate]],
+                            inferred = TRUE,
+                            sameday = searchdate == d)
+                    }
+                } else {
+                    ## If both are present, choose between them.
+                    ## Otherwise, use recorded default.
+                    if(is.null(searchdate)) { 
+                        list(default = defaults[[defaultdate]],
+                            inferred = FALSE,
+                            sameday = defaultdate == d)
+                    } else {
+                        ## Have both recorded and inferred default for the 
+                        ## current date. Use the recorded default, unless 
+                        ## the inferred is more recent.
+                        if(searchdate > defaultdate) {
+                            list(default = searches[[searchdate]],
+                                inferred = TRUE,
+                                sameday = searchdate == d)
+                        } else {
+                            list(default = defaults[[defaultdate]],
+                                inferred = FALSE,
+                                sameday = defaultdate == d)
+                        }
+                    }
+                }
+            }   
+        } else {
+            ## Only have searches.
+            function(d) { 
+                searchdate <- mostrecentprior(d, names(searches))
+                if(is.null(searchdate)) {
+                    list(default = NA,
+                        inferred = FALSE,
+                        sameday = FALSE)
+                } else {
+                    list(default = searches[[searchdate]],
+                        inferred = TRUE,
+                        sameday = searchdate == d)
+                }
+            }
+        }
+    } else {
+        if(length(defaults) > 0) {
+            ## Only have recorded defaults.
+            function(d) { 
+                defaultdate <- mostrecentprior(d, names(defaults))
+                if(is.null(defaultdate)) {
+                    list(default = NA,
+                        inferred = FALSE,
+                        sameday = FALSE)
+                } else { 
+                    list(default = defaults[[defaultdate]],
+                        inferred = FALSE,
+                        sameday = defaultdate == d)
+                }
+            }
+        } else {
+            ## Have neither searches nor recorded defaults.
+            function(d) { 
+                list(default = NA,
+                    inferred = FALSE,
+                    sameday = FALSE)
+            }
+        }
+    }
+    if(lastonly) {
+        result <- inferdefault(max(dates))
+        if(!info) return(result$default)
+        return(result)
+    }
+    result <- setNames(lapply(dates, inferdefault), dates)
+    if(!info) return(unlist(lapply(result, "[[", "default")))
+    result
+}
+
+## Infers daily search defaults for each element in the list of search 
+## information returned by allSearches(). The inferred search default is 
+## the most frequently used search provider on a given day.
+## 
+## Returns a named vector the same length as the inputted list, mapping dates 
+## to the inferred search default on each day.
+inferDailyDefaultFromSearches <- function(searches) {
+    unlist(lapply(
+        dailySearchCounts(searches, provider = TRUE, sap = FALSE, 
+            preprocess = FALSE),
+        mostCommonProvider
+    ))
+        
+}
+
+## Computes the most frequently used search provider from a vector of search
+## counts. 
+## The input should a named vector mapping search provider names to counts.
+## Returns the search provider name with the highest count, breaking ties 
+## at random.
+mostCommonProvider <- function(searchcounts) {
+    if(length(searchcounts) == 1) return(names(searchcounts)[[1]])
+    searchcounts <- searchcounts[order(names(searchcounts))]
+    hasmaxcount <- which(searchcounts == max(searchcounts))
+    if(length(hasmaxcount) == 1) 
+        return(names(searchcounts)[[hasmaxcount[[1]]]])
+    names(searchcounts)[[sample(hasmaxcount, 1)]]
+}
+
+
 
 ##----------------------------------------------------------------
 

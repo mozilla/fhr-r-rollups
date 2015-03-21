@@ -120,11 +120,11 @@ dailyActivityValues <- function(activityday) {
 ## by allActivity(). This should be specified by setting 'preprocess' to TRUE
 ## for the former and FALSE for the latter. 
 ##
-## Returns a list with the same names as the input, or NULL if the input 
-## has zero length. Each entry is of the form:
-## list(nsessions, totalsec, activesec), giving the number of sessions 
-## started on that day, and the total overall and active seconds 
-## for these sessions.
+## Returns a list with entries for each day in the input that has session 
+## information, or NULL if there are none. 
+## Each entry is of the form list(nsessions, totalsec, activesec), 
+## giving the number of sessions started on that day, and the total overall 
+## and active seconds for these sessions.
 dailyActivity <- function(days, preprocess = TRUE) {
     if(preprocess) days <- allActivity(days)
     if(length(days) == 0) return(NULL)
