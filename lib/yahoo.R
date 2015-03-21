@@ -152,8 +152,10 @@ v34UpdateInfo <- function(days, pcd, targeted,
         return(list(
             has.ver = TRUE,
             ver.status = "new",
-            ## The initial date is the profile creation date.
-            ver.date = pcd,
+            ## The initial date is the earliest FHR active date.
+            ## This should generally be the same as the profile creation date,
+            ## but guarantees that ver.date is a date in the days list.
+            ver.date = min(names(days)),
             ## Assume it got the new default if it was targeted.
             new.sdef = targeted,
             reason = "pcd"
