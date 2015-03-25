@@ -107,11 +107,14 @@ toText("rweek"  ,o="tweek")
 toText("rmonth" ,o="tmonth")
 toText("rday"   ,o="tday")
 
+email(subj="Rollups Completed Successfully", body=sprintf("The newest snapshot is %s", fileOrigin), to="<joy@mozilla.com>")
+
 
 ################################################################################
 ## Now merge into vertica
 ################################################################################
 
+if(exists("NotUsingCron") && NotUsingCron==TRUE){
 email(subj="Verica Import Begins", body="empty body",to="<joy@mozilla.com>")
 
 d <- odbc(user='fhr_rollup_rw', pass='WIATOoTv5qc4Macl')
@@ -156,6 +159,7 @@ email(subj=sprintf("FHR Rollups V2: Completed for %s", strftime(as.Date(fileOrig
       body=sprintf("Rolllups have been created with a min date of %s and a max date of %s",  as.character(.s[2]), as.character(.s[1])),
       to="<metrics@mozilla.com>")
 
+}
 ## Testing, do not delete, this is useful
 ## h <- odbc()
 
