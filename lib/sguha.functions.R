@@ -3,6 +3,7 @@ winVerCheck <- function(ver,keepverforothers=FALSE){
     ## http://www.msigeek.com/442/windows-os-version-numbers
     keepverforothers=eval(keepverforothers)
     mu <- sapply(c("win7"="6.1","winVista"="6.0",'winXP'="(5.1|5.2)",'win8/Server2012' = "6.2"
+                   ,"win8.1"="6.3","win10"="10.0"
                    ,"win2K"="5.0","winMe"="4.9", "win98"="4.1","win95"="4.0","winNT"="3.5")
                  ,function(r) sprintf("^(%s)",r))
     mun <- names(mu)

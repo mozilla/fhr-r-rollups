@@ -45,7 +45,7 @@ source("lib/activity.R",keep.source=FALSE)
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
-I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE) ## tag if need to apply fromJSON
+I <- list(name=sqtxt("/user/sguha/fhr/samples/output/5pct"),tag=TRUE) ## tag if need to apply fromJSON
 
 ## Get the snapshot date from the sample creation time
 rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text')
@@ -156,7 +156,7 @@ for(x in c( "day","week",'month')){
 
 .s <- d$q("select max(timeStart), min(timeStart) from fhr_rollups_daily_base")
 email(subj=sprintf("FHR Rollups V2: Completed for %s", strftime(as.Date(fileOrigin,"%Y%m%d"),"%Y-%m-%d")),
-      body=sprintf("Rolllups have been created with a min date of %s and a max date of %s",  as.character(.s[2]), as.character(.s[1])),
+      body=sprintf("Rolllups have been created with a min date of %s and a max date of %s\n%s",  as.character(.s[2]), as.character(.s[1]),fort()),
       to="<metrics@mozilla.com>")
 
 }
