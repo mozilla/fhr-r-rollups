@@ -148,3 +148,22 @@ get.locale <- function(r) {
 get.current.version <- function(r) {
     majorVersion(isn(r$geckoAppInfo$version))
 }
+
+## Returns the profile creation date formatted as a string (yyyy-mm-dd),
+## or NA if missing. 
+## If the profile creation date entry is missing, the function will attempt to 
+## infer the date as the earliest recorded active date if 'infer' is TRUE.
+get.profile.creation.date <- function(r, infer = TRUE) {
+    pcd <- isn(r$data$last$org.mozilla.profile.age$profileCreation)
+    pcd <- tryCatch(as.Date(pcd, origin = "1970-01-01"),
+        error = function(e) { NA })
+    if(!is.na(pcd)) return(strftime(pcd, "%Y-%m-%d"))
+    if(infer) {
+        pcd <- if(length(r$data$days) > 0) {
+            min(names(r$data$days))
+        } else { isn(r$thisPingDate) }
+        if(!is.na(pcd)) return(pcd)
+    }
+    NA
+}
+
