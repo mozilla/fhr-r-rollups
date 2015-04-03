@@ -61,7 +61,7 @@ hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d
 
 BACK <- 90
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
-                   end   = strftime(fileOriginDate-7,"%Y-%m-%d"))
+                   end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE)
 
 timeChunksWk    <- weekTimeChunk(timeperiod$start, timeperiod$end)
