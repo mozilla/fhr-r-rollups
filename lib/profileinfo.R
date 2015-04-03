@@ -155,9 +155,10 @@ get.current.version <- function(r) {
 ## infer the date as the earliest recorded active date if 'infer' is TRUE.
 get.profile.creation.date <- function(r, infer = TRUE) {
     pcd <- isn(r$data$last$org.mozilla.profile.age$profileCreation)
-    pcd <- tryCatch(as.Date(pcd, origin = "1970-01-01"),
+    pcd <- tryCatch(
+            strftime(as.Date(pcd, origin = "1970-01-01"), "%Y-%m-%d"),
         error = function(e) { NA })
-    if(!is.na(pcd)) return(strftime(pcd, "%Y-%m-%d"))
+    if(!is.na(pcd)) return(pcd)
     if(infer) {
         pcd <- if(length(r$data$days) > 0) {
             min(names(r$data$days))
