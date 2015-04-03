@@ -45,7 +45,7 @@ source("lib/activity.R",keep.source=FALSE)
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
-I <- list(name=sqtxt("/user/sguha/fhr/samples/output/5pct"),tag=TRUE) ## tag if need to apply fromJSON
+I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE) ## tag if need to apply fromJSON
 
 ## Get the snapshot date from the sample creation time
 rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text')
