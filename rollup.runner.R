@@ -107,7 +107,6 @@ toText("rweek"  ,o="tweek")
 toText("rmonth" ,o="tmonth")
 toText("rday"   ,o="tday")
 
-email(subj="Rollups Completed Successfully", body=sprintf("The newest snapshot is %s", fileOrigin), to="<joy@mozilla.com>")
 
 
 ################################################################################
@@ -178,3 +177,4 @@ email(subj=sprintf("FHR Rollups V2: Completed for %s", strftime(as.Date(fileOrig
 ## })
 
 
+email(subj="Rollups Completed Successfully", body=sprintf("The newest snapshot is %s", fileOrigin), to="<joy@mozilla.com>")
