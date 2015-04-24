@@ -18,6 +18,37 @@ winVerCheck <- function(ver,keepverforothers=FALSE){
 }
 getWindowsVersionAsString <- winVerCheck(keepverforothers=TRUE)
 
+##' Takes bytes and converts to human readable format
+##' @param bytes is the number of bytes
+##' @return a string
+bytesToString <- function(bytes,rnd=2){
+  Round <- function(a,b){
+    format(round(a,b),nsmall=2)
+  }
+  if(bytes<1024) sprintf("%s kb",bytes)
+  else if(bytes<1024*1024) sprintf("%s KB",Round(bytes/1024,rnd))
+  else if(bytes< 1024*1024*1024) sprintf("%s MB", Round(bytes/(1024*1024),rnd))
+  else  sprintf("%s GB",Round(bytes/(1024*1024*1024),rnd))
+}
+
+
+##' Takes seconds and converts to human readable format
+##' @param secs is the number of seconds
+##' @return a string
+secondsToString <- function(secs,rnd=2){
+  Round <- function(a,b){
+    format(round(a,b),nsmall=2)
+  }
+  if(secs<60) sprintf("%s seconds",secs)
+  else if(secs<60*60) sprintf("%s minutes",Round(secs/60,rnd))
+  else if(secs< 86400) sprintf("%s hours", Round(secs/(60*60),rnd))
+  else if(secs< (86400*30)) sprintf("%s days",Round(secs/(86400),rnd))
+  else if(secs< (86400*365)) sprintf("%s months",Round(secs/(86400*30),rnd))
+  else  sprintf("%s years",Round(secs/(86400*365),rnd))
+}
+
+
+
 getOSXVersionAsString <- function(s){
     s <- isn(s)
     if(grepl("^(10)",s)) return("darwinSnowLeopard")
