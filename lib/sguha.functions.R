@@ -1,3 +1,4 @@
+
 isn <- function(s,subcode=NA) if(is.null(s) || length(s)==0 || is.na(s)) subcode else s
 winVerCheck <- function(ver,keepverforothers=FALSE){
     ## http://www.msigeek.com/442/windows-os-version-numbers
@@ -46,7 +47,6 @@ secondsToString <- function(secs,rnd=2){
   else if(secs< (86400*365)) sprintf("%s months",Round(secs/(86400*30),rnd))
   else  sprintf("%s years",Round(secs/(86400*365),rnd))
 }
-
 
 
 getOSXVersionAsString <- function(s){
@@ -115,3 +115,15 @@ toText <- function(i,o){
     rhchmod(o,"777")
     o
 }
+
+
+
+hlmCategory <- function(days,totalDays=NULL){
+    ## needs dependen functinons in https://github.com/mozilla/fhr-r-rollups/blob/master/makeFlatTables.v3.R
+    totalhrs <- totalActivity(days)
+    totalhrs <- totalhrs$activesec/3600
+    avg <- totalhrs / totalDays
+    state=if(avg<10/60) "01La" else if(avg<=30/60) "02Oc" else if(avg<1) "03Li" else if(avg<3) "04Me" else if (avg<18) "05Hi" else "06Bo"
+    state
+}
+
