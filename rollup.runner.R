@@ -38,6 +38,9 @@ waitForJobs <- function(L){
 #########################################################################################
 ## Running
 #########################################################################################
+source("/etc/mozilla.cluster.conf/other_configs/rhipe.mozilla.setup.R")
+sqtxt <- function (folders) rhfmt(type = "sequence", folder = folders, recordsAsText = TRUE)
+
 setwd("~/fhr-r-rollups")
 source("lib/search.R",keep.source=FALSE)
 source("lib/profileinfo.R",keep.source=FALSE)
