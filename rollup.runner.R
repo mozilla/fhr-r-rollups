@@ -1,5 +1,15 @@
 PCTMAX <- 1
 MONSEC <- 15
+library(sendmailR)
+email <- function(subj="blank subject", body="blank body",to="<sguha@mozilla.com>"){
+    tryCatch({
+        bodyWithAttachment <- list(body)
+        sendmail(from="<sguha@mozilla.com>",to=to,subject=subj
+               ,msg=bodyWithAttachment
+                 ,control=list(smtpServer='smtp.mozilla.org'))
+        list(TRUE,NA)
+    },error=function(e) list(FALSE,e))
+}
 extract.date <- function(s){
     a <- tail(strsplit(s,"/",fixed=TRUE)[[1]],1)
     list(name=a, date=as.Date(a))
