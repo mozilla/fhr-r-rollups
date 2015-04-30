@@ -127,3 +127,33 @@ hlmCategory <- function(days,totalDays=NULL){
     state
 }
 
+
+tagDaysByVersion <- function(d){
+    ##  takes $data$days and returns a modified data$days
+    ## with versioninfo attached as a field
+    ## i've not done much error checking with this
+    ## if you get errors notify me
+    if(length(d$data$days)==0) return(d$data$days)
+    days <- d$data$days [ order(names(d$data$days)) ]
+    dates <- names(days)
+    dversion <- rep(NA, length(dates))
+    iversion <- NA
+    verupdate <- rep(FALSE,length(dates))
+    for(i in 1:length(dates)){
+        vs <- days[[i]]$org.mozilla.appInfo.versions
+        if(is.null(vs$appVersion)){
+            dversion[i] <- iversion
+        }else{
+            iversion <- dversion[i] <- max(unlist(vs$appVersion)) ## there can be several on a day
+            verupdate[i] <- TRUE
+        }
+    }
+    ## If alll of dversion is NA, there was never an update
+    ## Force them to be equal to gecko values
+    if(all(is.na(dversion))) dversion <- rep(d$geckoAppInfo$platformVersion, length(dates))
+    days <- mapply(function(dc, dv, vu){
+        dc$versioninfo <- list(version=dv,vup=vu)
+        dc
+    }, days, dversion,verupdate, SIMPLIFY=FALSE)
+    return(days)
+}
