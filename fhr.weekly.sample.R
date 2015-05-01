@@ -67,6 +67,7 @@ randomIndex <- function(avec, prop){
 sampleTypes <- list(  list(name="5pct",fraction = 0.05,chooseIndices=function(a,b) randomIndex(a,0.05))
                   , list(name="10pct",fraction = 0.1,chooseIndices=function(a,b) randomIndex(a,0.1))
                   , list(name="1pct",fraction = 0.01,chooseIndices=function(a,b) randomIndex(a,0.01))
+                  , list(name="0.01pct",fraction = 0.01/100,chooseIndices=function(a,b) randomIndex(a,0.01/100))
                     , list(name="fromjson1pct",fraction = 0.01,chooseIndices=function(a,b) randomIndex(a,0.01))
                     , list(name="nightly", chooseIndices = function(a,k)
                            tryCatch({
