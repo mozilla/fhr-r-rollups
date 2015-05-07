@@ -118,15 +118,16 @@ toText <- function(i,o){
 
 
 
-hlmCategory <- function(days,totalDays=NULL,asNumber=FALSE){
+hlmCategory <- function(days,totalDays=NULL,asNumber=FALSE,returnHrs=FALSE){
     ## needs dependen functinons in https://github.com/mozilla/fhr-r-rollups/blob/master/makeFlatTables.v3.R
     totalhrs <- totalActivity(days)
     totalhrs <- totalhrs$activesec/3600
     avg <- totalhrs / totalDays
     state=if(avg<10/60) "01La" else if(avg<=30/60) "02Oc" else if(avg<1) "03Li" else if(avg<3) "04Me" else if (avg<18) "05Hi" else "06Bo"
-    if(asNumber){
+    res <- if(asNumber){
         if(state=="01La") 1 else if(state=="02Oc") 2 else if(state=="03Li") 3 else if(state=="04Me") 4 else if(state=="05Hi") 5 else 6
     }else state
+    if(returnHrs) return( list(hrs=totalDays, state=res)) else return(res)
 }
 
 
