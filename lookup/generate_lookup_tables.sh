@@ -79,6 +79,7 @@ SHARED_WEB_LOCATION="$APP1_REF"
 SHARED_HDFS_LOCATION="${HOME/home/user}/shared"
 
 echo "Running lookup table generation:  `date`"
+cd "$(cd "`dirname "$0"`"; pwd)"
 
 ## Generate CSV files.
 echo "Generating CSV files..."
