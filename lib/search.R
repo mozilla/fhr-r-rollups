@@ -478,6 +478,9 @@ mostCommonProvider <- function(searchcounts) {
 ## Returns the list of search provider name strings representing official
 ## search plugins, optionally restricted to those related to a major search 
 ## engine.
+##
+## Currently the results are not specific to locale, so any restrictions to 
+## locale would need to be made separately.
 ## 
 ## Official search plugins consist of all the plugins included across all 
 ## stock builds, and may also include certain "other"-prefixed search names 
@@ -497,7 +500,7 @@ mostCommonProvider <- function(searchcounts) {
 ##   together with any distribution-specific "other"-prefixed plugins that need
 ##   to be included.
 ## - To restrict plugins to specific search engines, supply the prefix names
-##   for the search engines as 'pluginprefix' (eg. pluginprefix = "yahoo").
+##   for the search engines as 'prefix' (eg. prefix = "yahoo").
 ##   The prefix will also be checked against the distribtype, if one is supplied.
 ##   If the distribtype has the same prefix, its plugin names will also be 
 ##   included. 
@@ -548,5 +551,45 @@ bing.searchnames <- function(distribtype) {
 ## for the specified distribution, returned as a character vector.
 google.searchnames <- function(distribtype) {
     searchNamesOfficialAndPartner(distribtype, "google")
+}
+
+## List of all search provider names associated with official Yandex searches
+## for the specified distribution, returned as a character vector.
+## The list is not locale-specific, as it includes Yandex search engine names
+## used across all locales.
+yandex.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "yandex")
+}
+
+## List of all search provider names associated with official Baidu searches
+## for the specified distribution, returned as a character vector.
+## The list is not locale-specific, as it includes Baidu search engine names
+## used across all locales.
+baidu.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "baidu")
+}
+
+## List of all search provider names associated with official Amazon searches
+## for the specified distribution, returned as a character vector.
+amazon.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "amazon")
+}
+
+## List of all search provider names associated with official eBay searches
+## for the specified distribution, returned as a character vector.
+ebay.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "eBay")
+}
+
+## List of all search provider names associated with official DuckDuckGo
+## searches for the specified distribution, returned as a character vector.
+duckduckgo.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "duckduckgo")
+}
+
+## List of all search provider names associated with official AOL searches
+## for the specified distribution, returned as a character vector.
+aol.searchnames <- function(distribtype) {
+    searchNamesOfficialAndPartner(distribtype, "aol")
 }
 
