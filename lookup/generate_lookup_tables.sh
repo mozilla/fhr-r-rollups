@@ -117,8 +117,8 @@ chmod 644 $OUTPUT_DIR/*.csv
     echo "Copied CSVs to dashboard1.")
 
 ## Copy to HDFS.
-chmod 755 $LOOKUP_RDATA
-hadoop dfs -copyFromLocal $LOOKUP_RDATA \
+chmod 644 $LOOKUP_RDATA
+hadoop dfs -copyFromLocal -f $LOOKUP_RDATA \
     "$SHARED_HDFS_LOCATION/$LOOKUP_RDATA_BASENAME" && \
     echo "Copied RData to HDFS."
     
