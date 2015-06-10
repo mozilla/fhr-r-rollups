@@ -94,9 +94,6 @@ if [[ $? != 0 ]]; then
 fi
 echo "Done."
 
-## If not deploying, we are done.
-$SHOULD_DEPLOY || exit 0
-
 ## Generate RData.
 echo "Generating RData..."
 Rscript --vanilla package-lookups.R \
@@ -109,6 +106,9 @@ if [[ $? != 0 ]]; then
     exit 1
 fi
 echo "Done."
+
+## If not deploying, we are done.
+$SHOULD_DEPLOY || exit 0
 
 ## Copy to app1.
 chmod 644 $OUTPUT_DIR/*.csv
