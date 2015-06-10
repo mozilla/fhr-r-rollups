@@ -74,7 +74,7 @@ LOOKUP_RDATA="$OUTPUT_DIR/$LOOKUP_RDATA_BASENAME"
 
 # Shared locations:
 # Web - location is pulled from env variable in local profile.
-SHARED_WEB_LOCATION="$APP1_REF"
+SHARED_WEB_LOCATION="$WWW_REF"
 # HDFS
 SHARED_HDFS_LOCATION="${HOME/home/user}/shared"
 
@@ -110,11 +110,11 @@ echo "Done."
 ## If not deploying, we are done.
 $SHOULD_DEPLOY || exit 0
 
-## Copy to app1.
+## Copy to dashboard1.
 chmod 644 $OUTPUT_DIR/*.csv
 [[ -z $SHARED_WEB_LOCATION ]] || \
     (scp $OUTPUT_DIR/*.csv $SHARED_WEB_LOCATION && \
-    echo "Copied CSVs to app1.")
+    echo "Copied CSVs to dashboard1.")
 
 ## Copy to HDFS.
 chmod 755 $LOOKUP_RDATA
