@@ -1,6 +1,6 @@
 
 """ 
-Generate a list of localized search plugins and defaults for Firefox stock
+Generate lists of localized search plugins and defaults for Firefox stock
 builds.
 
 These are the preloaded search plugins distributed with stock Mozilla builds 
@@ -160,7 +160,7 @@ def main():
         w.writerow(['shortname', 'fullname'])
         for sp in sorted(official_plugins):
             w.writerow(encode_row([sp[0], sp[1]]))
-        
+    
     # Print flattened list of search defaults.
     with open(default_table, 'w') as f:
         w = csv.writer(f)
