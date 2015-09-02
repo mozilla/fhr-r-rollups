@@ -31,5 +31,50 @@ updateValues <- function(days) {
     updates[order(names(updates))]
 }
 
+## Find the dates of a specific weekday closest to a vector of dates.
+## For example, for a set of dates, find the closest Sunday before each date. 
+##
+## This can be useful for splitting dates into weeks (tagging them by the 
+## start date of the week containing them) or for constraining date ranges 
+## to be bounded by specific weekdays.
+##
+## Input dates should be represented in the standard format ("yyyy-mm-dd").
+## Output is a vector of date strings in the same format.
+## Only a single weekday to use can be specified, by name (full or abbreviated) 
+## or by number using the POSIX wday scheme (0 = Sunday, 1 = Monday,..., 
+## 6 = Saturday).
+## The default is to return the closest Sunday before the input dates.
+## The function will return the closest weekday after the input dates by 
+## setting after.date = TRUE.
+closest.weekday <- function(dates, weekday = "sunday", after.date = FALSE) {
+    if(length(weekday) > 1) {
+        warning(paste("'weekday' argument should be a single scalar value -",
+            "only the first element will be used"))
+        weekday <- weekday[[1]]
+    }
+    ## If weekday is a numbered day of week, use as is.
+    ## Otherwise, assume it is a character string naming the day.
+    if(!(weekday %in% 0:6)) {
+        weekday <- tolower(as.character(weekday))
+        ## Find the day-of-week index corresponding to the specified weekday.
+        ## This will be the same as the POSIX wday value.
+        ## In the case of no match, default to Sunday.
+        weekday <- pmatch(weekday, 
+            c("sunday", "monday", "tuesday", "wednesday", "thursday", 
+                "friday", "saturday"), 
+            nomatch = 1) - 1
+    }
+    dates <- as.Date(dates, format = "%Y-%m-%d")
+    ## Days of week are numbered starting at 0 with Sunday.
+    ## This gives the offset between the date and the previous Sunday.
+    dayoffsets <- as.POSIXlt(dates)$wday
+    ## Compute offsets relative to desired weekday.
+    dayoffsets <- dayoffsets - weekday
+    if(after.date) dayoffsets <- 7 - dayoffsets
+    dayoffsets <- dayoffsets %% 7
+    ## Shift dates by offset.
+    dates <- if(after.date) dates + dayoffsets else dates - dayoffsets
+    format(dates, "%Y-%m-%d")
+}
 
 
