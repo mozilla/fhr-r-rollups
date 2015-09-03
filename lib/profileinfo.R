@@ -153,7 +153,7 @@ get.current.version <- function(r) {
 ## or NA if missing. 
 ## If the profile creation date entry is missing, the function will attempt to 
 ## infer the date as the earliest recorded active date if 'infer' is TRUE.
-get.profile.creation.date <- function(r, infer = TRUE) {
+get.profile.creation.date <- function(r, infer = FALSE) {
     pcd <- isn(r$data$last$org.mozilla.profile.age$profileCreation)
     pcd <- tryCatch(
             strftime(as.Date(pcd, origin = "1970-01-01"), "%Y-%m-%d"),
