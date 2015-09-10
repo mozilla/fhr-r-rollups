@@ -245,7 +245,7 @@ get.total.activity <- function(r, from = NULL, to = NULL) {
 ## for the first day in the month, ie. "yyyy-mm-01").
 ## Returns a vector of character strings the same length as the input vector.
 to.month <- function(dates) {
-    dates <- as.POSIXlt(dates, format = "%Y-%m-%d")
+    dates <- as.POSIXlt(as.Date(dates, format = "%Y-%m-%d"))
     ## Set the day of the month to 1.
     dates$mday <- 1
     format(dates, "%Y-%m-%d")
@@ -257,7 +257,7 @@ to.month <- function(dates) {
 ## Returns a vector of date strings representing the last date 
 ## of each year/month.
 last.month.day <- function(dates) {
-    dates <- as.POSIXlt(dates, format = "%Y-%m-%d")
+    dates <- as.POSIXlt(as.Date(dates, format = "%Y-%m-%d"))
     ## Set dates to the first day of their dates, to ensure that 
     ## advancing dates works properly.
     dates$mday <- 1
@@ -271,7 +271,7 @@ last.month.day <- function(dates) {
 ## Returns booleans for each date in the input vector indicating whether
 ## the date is a weekday.
 is.weekday <- function(dates) {
-    dates <- as.POSIXlt(dates, format = "%Y-%m-%d")
+    dates <- as.POSIXlt(as.Date(dates, format = "%Y-%m-%d"))
     dates$wday %in% 1:5
 }
 
