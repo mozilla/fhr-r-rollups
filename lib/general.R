@@ -54,7 +54,7 @@ closest.weekday <- function(dates, weekday = "sunday", after.date = FALSE) {
     }
     ## If weekday is a numbered day of week, use as is.
     ## Otherwise, assume it is a character string naming the day.
-    if(!(weekday %in% 0:6)) {
+    if(!(is.numeric(weekday) && any(weekday == 0:6))) {
         weekday <- tolower(as.character(weekday))
         ## Find the day-of-week index corresponding to the specified weekday.
         ## This will be the same as the POSIX wday value.
