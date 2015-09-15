@@ -66,7 +66,7 @@ allActivity <- function(days) {
     ## Result will contain NULL entries for each day with no valid
     ## session info.
     act <- lapply(days, function(d) {
-        d <- d$org.mozilla.appSessions.previous
+        d <- d[["org.mozilla.appSessions.previous"]]
         if(length(d) == 0) return(NULL)
         
         ## Combine clean and aborted session times.
@@ -92,7 +92,7 @@ allActivity <- function(days) {
         list(totalsec = tt, activesec = at * 5)
     })
     ## Remove NULL entries before returning. 
-    act.null <- unlist(lapply(act, is.null))
+    act.null <- as.logical(lapply(act, is.null))
     if(all(act.null)) return(NULL)
     if(any(act.null)) return(act[!act.null])
     act
@@ -147,8 +147,9 @@ totalActivity <- function(days, preprocess = TRUE) {
     if(preprocess) days <- allActivity(days)
     if(length(days) == 0) 
         return(list(nsessions = 0, totalsec = 0, activesec = 0))
-    activity <- list(totalsec = unlist(lapply(days, "[[", "totalsec")),
-        activesec = unlist(lapply(days, "[[", "activesec")))
+    activity <- list(totalsec = 
+        unlist(lapply(days, "[[", "totalsec"), use.names = FALSE),
+        activesec = unlist(lapply(days, "[[", "activesec"), use.names = FALSE))
     dailyActivityValues(activity)
 }
 
