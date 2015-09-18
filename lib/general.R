@@ -16,7 +16,7 @@
 ## If no valid updates were found across the input days, returns NULL.
 updateValues <- function(days) {
     if(length(days) == 0) return(NULL)
-    updates <- unlist(lapply(days, function(d) {
+    updates <- lapply(days, function(d) {
         vu <- d$org.mozilla.appInfo.versions
         ## Handle different field versions. 
         vu <- if(identical(vu[["_v"]], 1)) vu$version else vu$appVersion
@@ -24,11 +24,15 @@ updateValues <- function(days) {
         ## If there are multiple versions, use the latest one. 
         if(length(vu) > 1) vu <- vu[[length(vu)]]
         ## Simple validity check.
-        if(is.na(vu) || !grepl("^(\\d+)\\.", vu)) return(NULL)
+        if(is.na(vu) || !grepl("^[0-9]+\\.", vu)) return(NULL)
         vu
-    }))
-    if(length(updates) == 0) return(NULL)
-    updates[order(names(updates))]
+    })
+    u.null <- as.logical(lapply(updates, is.null))
+    if(all(u.null)) return(NULL)
+    if(any(u.null)) updates <- updates[!u.null]
+    updates.v <- as.character(updates)
+    names(updates.v) <- names(updates)
+    updates.v[order(names(updates.v))]
 }
 
 ## Find the dates of a specific weekday closest to a vector of dates.
