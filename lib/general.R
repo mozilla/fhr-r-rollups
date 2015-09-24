@@ -82,3 +82,14 @@ closest.weekday <- function(dates, weekday = "sunday", after.date = FALSE) {
 }
 
 
+## Fill in NA entries in a vector with the closest previous non-NA value, if 
+## any. In other words, if entry i is NA, and there is a non-NA entry with 
+## index 1 <= j < i, entry i will get populated with the value at the largest
+## such j.
+fillWithLastObserved <- function(v) {
+    isobs <- !is.na(v)
+    newv <- c(NA, v[isobs])[cumsum(isobs) + 1]
+    if(!is.null(names(v))) names(newv) <- names(v)
+    newv
+}
+
