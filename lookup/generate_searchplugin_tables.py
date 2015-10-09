@@ -46,11 +46,11 @@ def search_plugin_list(raw_channel_section):
     """Extract list of search plugins from raw JSON section.
     
     The section should be the info block for a given locale/app/channel 
-    combination. Returns a list of tuples of the form (shortname, fullname),
+    combination. Returns a list of tuples of the form (shortname, "fullname"),
     one for each listed search plugin.
     """
     raw_plugins_section = raw_channel_section['searchplugins']
-    return [(shortname, raw_plugins_section[shortname]['name'])
+    return [(shortname, '"%s"' % raw_plugins_section[shortname]['name'])
                 for shortname in raw_plugins_section]
 
 
@@ -60,7 +60,7 @@ def search_default(raw_channel_section):
     The section should be the info block for a given locale/app/channel 
     combination.
     """
-    return raw_channel_section['p12n']['defaultenginename']
+    return '"%s"' % raw_channel_section['p12n']['defaultenginename']
 
 
 def combine_plugins_across_channels(raw_app_section, locale, appname):
