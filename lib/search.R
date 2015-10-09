@@ -542,7 +542,8 @@ mostCommonProvider <- function(searchcounts) {
 ##   together with any distribution-specific "other"-prefixed plugins that need
 ##   to be included.
 ## - To restrict plugins to specific search engines, supply the prefix names
-##   for the search engines as 'prefix' (eg. prefix = "yahoo").
+##   for the search engines as 'prefix' (eg. prefix = "yahoo"). This can be a
+##   regular expression, and will be interpreted as such (eg. "(a|b)").
 ##   The prefix will also be checked against the distribtype, if one is supplied.
 ##   If the distribtype has the same prefix, its plugin names will also be 
 ##   included. 
@@ -626,7 +627,7 @@ ebay.searchnames <- function(distribtype) {
 ## List of all search provider names associated with official DuckDuckGo
 ## searches for the specified distribution, returned as a character vector.
 duckduckgo.searchnames <- function(distribtype) {
-    searchNamesOfficialAndPartner(distribtype, "duckduckgo")
+    searchNamesOfficialAndPartner(distribtype, "(ddg|duckduckgo)")
 }
 
 ## List of all search provider names associated with official AOL searches
