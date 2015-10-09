@@ -55,40 +55,48 @@ allSearches <- function(days) {
     sc <- lapply(days, function(d) {
         ## Handle any errors due to bad data on a per-day basis.
         tryCatch({
-            s <- d$org.mozilla.searches.counts
+            s <- d[["org.mozilla.searches.counts"]]
             if(length(s) == 0) return(NULL)
-            
-            ## Preprocess.
             ## Remove version field if present.
             s[["_v"]] <- NULL
-            ## Convert to numeric vector and remove any invalid entries.
-            s <- unlist(s)
             if(length(s) == 0) return(NULL)
-            s <- setNames(as.numeric(s), names(s))
-            bad <- is.na(s) | s <= 0
-            if(all(bad)) return(NULL)
-            if(any(bad)) s <- s[!bad]
             
-            ## Now parse the search name strings and restructure.
+            ## Search providers and SAPs are encoded in the element names.
+            stypes <- names(s)
+            ## Convert counts to numeric vector and remove any invalid entries.
+            svals <- trunc(as.numeric(unlist(s, use.names = FALSE)))
+            badvals <- is.na(svals) | svals <= 0
+            if(all(badvals)) return(NULL)
+            if(any(badvals)) {
+                ## Make sure to update both values and type strings.
+                svals <- svals[!badvals]
+                stypes <- stypes[!badvals]
+            }
+            
+            ## Split type strings into SAP and search provider.
             ## Name format should be <searchengine>.<SAP>.
             ## Don't match SAP names exactly (in case they change),
             ## but check that they consist of [a-z] characters.
+            ## Split around the last "." character in the string.
+            splitinds <- as.integer(regexpr("\\.[a-z]+$", stypes, perl = TRUE))
+            badtypes <- splitinds < 0
+            if(all(badtypes)) return(NULL)
+            if(any(badtypes)) {
+                svals <- svals[!badtypes]
+                stypes <- stypes[!badtypes]
+                splitinds <- splitinds[!badtypes]
+            }
+            saps <- substr(stypes, splitinds + 1, nchar(stypes))
+            spvs <- substr(stypes, 1, splitinds - 1)
             ## Also trim whitespace around search provider name. 
             ## (In particular, some Bing searches are recorded as "Bing ".)
-            parsed <- regmatches(names(s),
-                regexec("^\\s*(\\S.*?)\\s*\\.([a-z]+)$", names(s)))
-            ## Remove entries with invalid name strings.
-            bad <- unlist(lapply(parsed, length)) == 0
-            if(all(bad)) return(NULL)
-            if(any(bad)) parsed <- parsed[!bad]
+            spvs <- gsub("^\\s+|\\s+$", "", spvs)
             
-            list(provider = unlist(lapply(parsed, "[[", 2)),
-                sap = unlist(lapply(parsed, "[[", 3)),
-                count = unname(s[unlist(lapply(parsed, "[[", 1))]))
+            list(provider = spvs, sap = saps, count = svals)
         }, error = function(e) { NULL })
     })
     ## Remove NULL entries in days list, indicating days with no valid searches.
-    sc.null <- unlist(lapply(sc, is.null))
+    sc.null <- as.logical(lapply(sc, is.null))
     if(all(sc.null)) return(NULL)    
     if(any(sc.null)) return(sc[!sc.null])
     sc
@@ -131,24 +139,57 @@ searchCountValues <- function(searchday, provider.grouping = identity,
     ## If both grouping arguments are NULL, just return the total count.
     if(is.null(provider.grouping) && is.null(sap.grouping))
         return(sum(searchday$count))
-    ## Otherwise apply grouping and use tapply.
+    ## Otherwise apply grouping and sum over groups..
     groupby <- list()
     if(!is.null(provider.grouping))
         groupby[[length(groupby) + 1]] <- provider.grouping(searchday$provider)
     if(!is.null(sap.grouping))
         groupby[[length(groupby) + 1]] <- sap.grouping(searchday$sap)
-    ## Convert grouping variables to factor explicity to retain NAs.
-    groupby <- lapply(groupby, factor, exclude = NULL)
-    searchcounts <- tapply(searchday$count, groupby, sum, simplify = TRUE)
-    if(removeNA) {
-        tokeep <- lapply(dimnames(searchcounts), function(n) { !is.na(n) })
-        searchcounts <- do.call("[", c(list(searchcounts), tokeep, drop = FALSE))
-        if(length(searchcounts) == 0) return(NULL)
+    
+    if(length(groupby) == 1) {
+        ## Case of single dimension.
+        ## Use factor levels to exclude NAs if required.
+        grouping <- factor(groupby[[1]], exclude = if(removeNA) NA else NULL)
+        ## If all groups are NA, nothing to return.
+        if(length(levels(grouping)) == 0) return(NULL)
+        counts <- split.default(searchday$count, grouping, drop = FALSE)
+        counts <- lapply(counts, sum)
+        return(setNames(as.numeric(counts), names(counts)))
     }
-    ## In the 2-d case, fill in NA entries with zeros (for missing combinations).
-    if(length(dim(searchcounts)) == 2)
-        searchcounts[is.na(searchcounts)] <- 0
-    searchcounts
+    
+    ## Otherwise, we are in the case of 2 dimensions.
+    ## We aggregate counts for SAP groups separately by search provider group.
+    ## First find the levels to use for grouping SAPs.
+    ## Handle NAs here, and use exclude = NULL later.
+    saps <- unique(groupby[[2]])
+    if(removeNA) {
+        saps.na <- is.na(saps)
+        ## If the only SAP group is NA, then no counts will be returned.
+        if(all(saps.na)) return(NULL)
+        ## Otherwise, we ignore counts for the NA group.
+        if(any(saps.na)) saps <- saps[!saps.na]
+    }
+    ## Find indices corresponding to search provider groups, removing NAs 
+    ## if required.
+    spvgrouping <- factor(groupby[[1]], exclude = if(removeNA) NA else NULL)
+    ## If all groups are NA, nothing to return.
+    if(length(levels(spvgrouping)) == 0) return(NULL)
+    spvinds <- split.default(seq_along(groupby[[1]]), spvgrouping)
+    ## Find search counts by SAP group separately for each provider group.
+    spvcounts <- lapply(spvinds, function(inds) {
+        ## The levels determine which groups are included in the output.
+        sapgrouping <- factor(groupby[[2]][inds], levels = saps, exclude = NULL)
+        ## Counts for each level of SAP grouping.
+        counts <- split.default(searchday$count[inds], sapgrouping, drop = FALSE)
+        ## Empty cells will have a count of 0.
+        counts <- lapply(counts, sum)
+        setNames(as.numeric(counts), names(counts))
+    })
+    ## Join counts into a matrix of providers x SAPs.
+    countsmat <- do.call(rbind, spvcounts)
+    ## Set rownames manually to avoid NAs getting converted to "NA".
+    rownames(countsmat) <- names(spvcounts)
+    countsmat
 }
 
 ## Computes daily search counts by search provider and SAP.
@@ -206,7 +247,7 @@ dailySearchCounts <- function(days, provider = TRUE, sap = TRUE,
         groupingFunction(sap), removeNA)
     ## Remove any NULLs that were introduced by subsetting.
     if(removeNA) {
-        sc.null <- unlist(lapply(searchcounts, is.null))
+        sc.null <- as.logical(lapply(searchcounts, is.null))
         if(all(sc.null)) return(NULL)    
         if(any(sc.null)) return(searchcounts[!sc.null])
     }
@@ -224,9 +265,10 @@ totalSearchCounts <- function(days, provider = TRUE, sap = TRUE,
                                         removeNA = FALSE, preprocess = TRUE) {
     if(preprocess) days <- allSearches(days)
     if(length(days) == 0) return(NULL)
-    searches <- list(provider = unlist(lapply(days, "[[", "provider")),
-        sap = unlist(lapply(days, "[[", "sap")),
-        count = unlist(lapply(days, "[[", "count")))
+    flds <- c("provider", "sap", "count")
+    searches <- setNames(lapply(flds, function(nn) { 
+        unlist(lapply(days, "[[", nn), use.names = FALSE)
+    }), flds)
     searchCountValues(searches, groupingFunction(provider), 
         groupingFunction(sap), removeNA)
 }
