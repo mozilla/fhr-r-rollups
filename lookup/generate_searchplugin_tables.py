@@ -25,7 +25,6 @@ outputted.
 
 import urllib2
 import json
-import csv
 from operator import itemgetter
 
 # Localization config describing search settings. 
@@ -125,6 +124,17 @@ def encode_row(row):
     return [v.encode('utf-8', 'backslashreplace') for v in row]
 
 
+def write_row(fp, row, encode = True):
+    """Encode if necessary, and write list to a file as CSV row.
+    
+    Do this explicitly to preserve desired quoting and formatting without
+    having to set a bunch of options in csv.writer.
+    """
+    if encode:
+        row = encode_row(row)
+    fp.write(','.join(row) + '\n')
+
+
 def main():
     """ Download configs file and extract search plugins information.
     
@@ -152,35 +162,31 @@ def main():
     # Generate CSV tables.
     # Print flattened verison of plugin_lists. 
     with open(full_info_table, 'w') as f:
-        w = csv.writer(f)
-        w.writerow(['app', 'locale', 'shortname', 'fullname'])
+        write_row(f, ['app', 'locale', 'shortname', 'fullname'], encode = False)
         # Run through plugins ordered by app then locale.
         config_keys = plugin_lists.keys()
         config_keys.sort(key = itemgetter(1,0))
         for k in config_keys:
             for sp in plugin_lists[k]:
-                encoded_row = encode_row([k[1], k[0], sp[0], sp[1]])
-                w.writerow(encoded_row)
+                write_row(f, [k[1], k[0], sp[0], sp[1]])
     
     # Print lookup table of official plugins.
     # These are the union of plugins across apps and locales.
     official_plugins = [set(v) for v in plugin_lists.itervalues()]
     official_plugins = reduce(set.union, official_plugins)
     with open(official_plugin_lookup, 'w') as f:
-        w = csv.writer(f)
-        w.writerow(['shortname', 'fullname'])
+        write_row(f, ['shortname', 'fullname'], encode = False)
         for sp in sorted(official_plugins):
-            w.writerow(encode_row([sp[0], sp[1]]))
+            write_row(f, [sp[0], sp[1]])
     
     # Print flattened list of search defaults.
     with open(default_table, 'w') as f:
-        w = csv.writer(f)
-        w.writerow(['app', 'locale', 'default'])
+        write_row(f, ['app', 'locale', 'default'], encode = False)
         # Run through plugins ordered by app then locale.
         config_keys = default_plugins.keys()
         config_keys.sort(key = itemgetter(1,0))
         for k in config_keys:
-            w.writerow(encode_row([k[1], k[0], default_plugins[k]]))
+            write_row(f, [k[1], k[0], default_plugins[k]])
     
     # Save the creation date of the JSON.
     with open(lastupdated_file, 'w') as f:
@@ -189,3 +195,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
