@@ -241,7 +241,17 @@ computeAllStats <- function(days,control){
                                      b         = control$jsObject),0)
     )
 }
-    
+
+
+simpleStats <- function(days,control){
+    c(
+        tActiveProfiles         = isn(computeActives(days),0),
+        tTotalSeconds           = computeTotalSeconds(control$activity),
+        tActiveSeconds          = computeActiveSeconds(control$activity),
+        tNumSessions            = computeNumSessions(control$activity),
+        tTotalSearch            = computeSearchCounts(control$searchcounts)
+    )
+}
 #---------------------------------------
 
 ### Job map function ###

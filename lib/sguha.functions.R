@@ -58,20 +58,20 @@ getOSXVersionAsString <- function(s){
     if(grepl("^(14)",s)) return("darwinYosemite")
     return(sprintf("darwinOthers_%s", s))
 }
-    
+
 getProfileCreationDate <- function(b){
     profileCrDate <- strftime(as.Date(
-        b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"), 
+        b$data$last$org.mozilla.profile.age$profileCreation,"1970-01-01"),
         "%Y-%m-%d")
     if(is.null(profileCrDate)) {
-        profileCrDate <- if(length(b$data$days) > 0) { 
-            min(names(b$data$days)) 
+        profileCrDate <- if(length(b$data$days) > 0) {
+            min(names(b$data$days))
         } else { b$thisPingDate }
     }
     if(is.null(profileCrDate) || is.na(profileCrDate)) return(NULL)
     return(profileCrDate)
 }
-           
+
 ## parseJobId In future version of RHIPE and Hadoop MR2 this will be
 ## removed, it is hack which isnt robust to Hadoop versions
 parseJobIDFromTrackingURL <- function(job){
@@ -127,7 +127,7 @@ hlmCategory <- function(days,totalDays=NULL,asNumber=FALSE,returnHrs=FALSE){
     res <- if(asNumber){
         if(state=="01La") 1 else if(state=="02Oc") 2 else if(state=="03Li") 3 else if(state=="04Me") 4 else if(state=="05Hi") 5 else 6
     }else state
-    if(returnHrs) return( list(hrs=totalDays, state=res)) else return(res)
+    if(returnHrs) return( list(hrs=totalhrs, state=res)) else return(res)
 }
 
 
