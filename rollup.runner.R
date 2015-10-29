@@ -43,7 +43,7 @@ waitForJobs <- function(L){
     }
 }
 
-    
+
 
 #########################################################################################
 ## Running
@@ -58,7 +58,7 @@ source("lib/activity.R",keep.source=FALSE)
 source("lib/sguha.functions.R",keep.source=FALSE)
 source("makeFlatTables.v3.R",keep.source=FALSE)
 
-I <- list(name=sqtxt("/user/sguha/fhr/samples/output/nightly"),tag=TRUE) ## tag if need to apply fromJSON
+I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE) ## tag if need to apply fromJSON
 
 ## Get the snapshot date from the sample creation time
 rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text')
@@ -72,7 +72,7 @@ rm(ll);
 rhmkdir(sprintf("/user/sguha/fhrrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
 hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
-BACK <- 90
+BACK <- 100
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE)
@@ -85,7 +85,7 @@ uweek           <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,jobname  = sprintf("Weekly Rollup")
                            ,mon.sec  = 0
                            ,setup    = setup
-                           ,shared   = shared.files                               
+                           ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
 
@@ -97,7 +97,7 @@ umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,jobname  = sprintf("Monthly Rollup")
                            ,mon.sec  = 0
                            ,setup    = setup
-                           ,shared   = shared.files                               
+                           ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
 
@@ -109,7 +109,7 @@ uday            <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,jobname  = sprintf("Daily Rollup")
                            ,mon.sec  = 0
                            ,setup    = setup
-                           ,shared   = shared.files                               
+                           ,shared   = shared.files
                            ,read     = FALSE
                            ,mapred   = list(mapred.task.timeout=0)
                            ,param    = list(PARAM=append(PARAM, list(granularity='day' ,listOfTimeChunks = timeChunksDay))))
@@ -158,7 +158,7 @@ for(x in c( "day","week",'month')){
     (keepdates <- range(unlist(list(day=timeChunksDay, week=timeChunksWk,month=timeChunksMonth)[[x]])))
     (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),maxPreviousSnapshot, keepdates[1]))
     dbSendUpdate(d$con,sql)
-    
+
     system(sprintf("rm -rf /tmp/%s-%s",exceptionsFile,x))
     sql <- sprintf("COPY fhr_rollups_%s_base  FROM LOCAL '%s' delimiter '\t' EXCEPTIONS '/tmp/%s-%s' REJECTED DATA '/tmp/%s-%s' ;", G(x) , t, exceptionsFile, x,badDataFile,x)
     dbSendUpdate(d$con, sql)
