@@ -145,7 +145,7 @@ for(x in c( "day","week",'month')){
     result <- system(sys_cmd,intern=TRUE)
     print(result)
     print(sprintf("Copied %s MB", j <- round( as.numeric(file.info(t)['size']/1024^2))))
-    if(j == 0) stop("PROBLEM COPYING DATA FROM HDFS")
+    if(j <=1 ) stop("PROBLEM COPYING DATA FROM HDFS")
     ## Now delete this data frokm the table if it exists (just in case
     ## we want tor run this merge again, we do not want a duplicate copy
     dbSendUpdate(d$con,sprintf( "DELETE FROM fhr_rollups_%s_base  where snapshot = '%s'", G(x), fileOrigin))
