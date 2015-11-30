@@ -9,7 +9,7 @@ weekTimeChunk <- function(fr,to){
     ## starting Sunday 21st if 'fr' is not a sunday it will be rewinded to the Sunday it belongs if 'to' is not a
     ## Saturday, it will be rewinded to the previous Saturday(end of week)
     sundaystart <- as.Date(fr)-as.POSIXlt(as.Date(fr))$wday
-    weeks <- seq(from=sundaystart,to=as.Date(to), by="weeks") 
+    weeks <- seq(from=sundaystart,to=as.Date(to), by="weeks")
     m <-lapply(weeks,function(s) c(start=strftime(s,"%Y-%m-%d"), end=strftime(s+7-1,"%Y-%m-%d")))
     names(m) <- NULL;m
 }
@@ -34,11 +34,11 @@ quarterTimeChunk <- function(years){
              c(start=sprintf("%s-10-01",year),end=sprintf("%s-12-31",year)))
     }),rec=FALSE)
 }
- 
+
 
 #---------------------------------------
 
-### Profile info dimensions ### 
+### Profile info dimensions ###
 
 ## Raw values for profile info dimensions.
 getDimensions <- function(b){
@@ -58,11 +58,11 @@ getDimensions <- function(b){
     locale       <- isn(b$data$last$org.mozilla.appInfo.appinfo$locale, "missing")
     geo          <- isn(b$geo)
     version      <- isn(b$geckoAppInfo$version, "missing")
-    list(vendor=vendor, name=name, channel=channel, os=os, osdetail=osdetail, 
+    list(vendor=vendor, name=name, channel=channel, os=os, osdetail=osdetail,
         distribution=distribution, locale=locale, geo=geo, version=version)
 }
 
-## Summary or standardized values for profile info (for convenience). 
+## Summary or standardized values for profile info (for convenience).
 ## Pass in output of getDimensions.
 getStandardizedDimensions <- function(dims) {
     isstdprofile <- as.character(standardProfileValue(dims$vendor, dims$name))
@@ -73,7 +73,7 @@ getStandardizedDimensions <- function(dims) {
     ## <partnerID> for partner builds,
     ## otherwise "other".
     distribtype <- majorDistribValue(dims$distribution)
-    
+
     list(isstdprofile=isstdprofile, stdchannel=stdchannel, stdos=stdos,
         distribtype=distribtype)
 }
@@ -101,10 +101,10 @@ computeTotalProfiles    <- function(profileCrDate,timeChunk) if(profileCrDate <=
 computeActiveDays <- function(days) length(days)
 
 ## Total time in seconds for sessions started during time chunk.
-computeTotalSeconds <- function(activity) activity$totalsec 
+computeTotalSeconds <- function(activity) activity$totalsec
 
 ## Total active time in seconds for sessions started during time chunk.
-computeActiveSeconds <- function(activity) activity$activesec 
+computeActiveSeconds <- function(activity) activity$activesec
 
 ## Total # sessions started during time chunk.
 computeNumSessions <- function(activity) activity$nsessions
@@ -128,7 +128,7 @@ computeSearchCounts <- function(searchcounts, groups = NULL) {
 # ## Searches by provider (through official search plugins).
 # computeYahooSearches <- function(searchcounts) {
     # if("yahoo" %in% names(searchcounts)) searchcounts[["yahoo"]] else 0
-# } 
+# }
 
 # computeGoogleSearches <- function(searchcounts) {
     # if("google" %in% names(searchcounts)) searchcounts[["google"]] else 0
@@ -141,7 +141,7 @@ computeSearchCounts <- function(searchcounts, groups = NULL) {
 # ## Searches through any official plugins.
 # computeOfficialSearches <- function(searchcounts) {
     # if(length(searchcounts) == 0) return(0)
-    
+
 # }
 
 #---------------------------------------
@@ -191,7 +191,7 @@ computeChurn1           <- function(alldays,timeChunk){
     wasActivePrev14Days <- any(names(alldays)>= st1 & names(alldays)<ed1)
     1*(wasActiveLast14Days==FALSE && wasActivePrev14Days==TRUE)
 }
-computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)    
+computeChurn            <- function(alldays,timeChunk) computeChurn1(alldays, timeChunk)
 
 ## Was the profile active in the 28 days before the beginning of the window and has UP?
 computeIfProfileHasUp <- function(alldays, timeChunk,b){
@@ -208,35 +208,36 @@ computeIfProfileHasUp <- function(alldays, timeChunk,b){
 ## Total # crashes.
 computeTotalCrashes     <- function(days)  sum(unlist(lapply(days,function(dc) c(dc$org.mozilla.crashes.crashes[c("main-crash", "content-crash")]))))
 
-## Collect all activity stats. 
-## Each of these stats will be added up within segments. 
+## Collect all activity stats.
+## Each of these stats will be added up within segments.
 computeAllStats <- function(days,control){
+    MULTIPLIER <- control$MULTIPLIER
     c(
-        tTotalProfiles          = isn(computeTotalProfiles(control$profileCrDate, control$timeChunk),0),
-        tExistingProfiles       = isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
-        tNewProfiles            = isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
-        tActiveProfiles         = isn(computeActives(days),0),
-        tInActiveProfiles       = isn(computeInActives(days),0),
-        tActiveDays             = isn(computeActiveDays(days),0),
-        tTotalSeconds           = computeTotalSeconds(control$activity),
-        tActiveSeconds          = computeActiveSeconds(control$activity),
-        tNumSessions            = computeNumSessions(control$activity),
-        tCrashes                = isn(computeTotalCrashes(days),0),
-        tTotalSearch            = computeSearchCounts(control$searchcounts),
-        tGoogleSearch           = computeSearchCounts(control$searchcounts, "google"),
-        tYahooSearch            = computeSearchCounts(control$searchcounts, "yahoo"),
-        tBingSearch             = computeSearchCounts(control$searchcounts, "bing"),
-        tOfficialSearch         = computeSearchCounts(control$searchcounts,
-                                    c("google", "yahoo", "bing", "otherofficial")),
-        tIsDefault              = isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
-        tIsActiveProfileDefault = isn(computeIsActiveProfileDefault(days),0),
-        t5outOf7                = isn(compute5outOf7(days, 
+        tTotalProfiles          = MULTIPLIER * isn(computeTotalProfiles(control$profileCrDate, control$timeChunk),0),
+        tExistingProfiles       = MULTIPLIER * isn(computeExistingProfiles(control$profileCrDate, control$timeChunk),0),
+        tNewProfiles            = MULTIPLIER * isn(computeNewProfiles(control$profileCrDate, control$timeChunk),0),
+        tActiveProfiles         = MULTIPLIER * isn(computeActives(days),0),
+        tInActiveProfiles       = MULTIPLIER * isn(computeInActives(days),0),
+        tActiveDays             = MULTIPLIER * isn(computeActiveDays(days),0),
+        tTotalSeconds           = MULTIPLIER * computeTotalSeconds(control$activity),
+        tActiveSeconds          = MULTIPLIER * computeActiveSeconds(control$activity),
+        tNumSessions            = MULTIPLIER * computeNumSessions(control$activity),
+        tCrashes                = MULTIPLIER * isn(computeTotalCrashes(days),0),
+        tTotalSearch            = MULTIPLIER * computeSearchCounts(control$searchcounts),
+        tGoogleSearch           = MULTIPLIER * computeSearchCounts(control$searchcounts, "google"),
+        tYahooSearch            = MULTIPLIER * computeSearchCounts(control$searchcounts, "yahoo"),
+        tBingSearch             = MULTIPLIER * computeSearchCounts(control$searchcounts, "bing"),
+        tOfficialSearch         = MULTIPLIER * computeSearchCounts(control$searchcounts,
+                                                                   c("google", "yahoo", "bing", "otherofficial")),
+        tIsDefault              = MULTIPLIER * isn(computeIsDefault(days,alldays=control$jsObject$data$days,timeChunk = control$timeChunk),0),
+        tIsActiveProfileDefault = MULTIPLIER * isn(computeIsActiveProfileDefault(days),0),
+        t5outOf7                = MULTIPLIER * isn(compute5outOf7(days,
                                     alldays     = control$jsObject$data$days,
                                     granularity = control$granularity,
                                     timeChunk   = control$timeChunk),0),
-        tChurned                = isn(computeChurn(alldays   = control$jsObject$data$days, 
+        tChurned                = MULTIPLIER * isn(computeChurn(alldays   = control$jsObject$data$days,
                                     timeChunk = control$timeChunk),0),
-        tHasUP                  = isn(computeIfProfileHasUp(alldays   = control$jsObject$data$days,
+        tHasUP                  = MULTIPLIER * isn(computeIfProfileHasUp(alldays   = control$jsObject$data$days,
                                      timeChunk = control$timeChunk,
                                      b         = control$jsObject),0)
     )
@@ -255,7 +256,7 @@ simpleStats <- function(days,control){
 #---------------------------------------
 
 ### Job map function ###
-    
+
 summaries <- function(a,b){
     if(PARAM$needstobetagged){
         b <- fromJSON(b)
@@ -278,23 +279,24 @@ summaries <- function(a,b){
                         bing = bing.searchnames(bdim$distribtype))
         ## Add a group for searches that use official plugins but none of the above.
         officialsn <- official.searchnames(bdim$distribtype)
-        grouping[["otherofficial"]] <- 
+        grouping[["otherofficial"]] <-
             officialsn[!(officialsn %in% unlist(grouping, use.names = FALSE))]
         grouping[["other"]] <- NA
         searchcounts <- totalSearchCounts(days, provider = grouping, sap = FALSE)
-        
+
         ## Your custom code can be here (in statcomputer):
         mystats        <- PARAM$statcomputer(days, control=list(
+            MULTIPLIER    = isn(PARAM$sampleMultiplier,1)
             jsObject      = b,
-            profileCrDate = profileCrDate, 
-            granularity   = PARAM$granularity, 
+            profileCrDate = profileCrDate,
+            granularity   = PARAM$granularity,
             timeChunk     = timeChunk,
             activity      = activity,
             searchcounts  = searchcounts)
         )
         if(PARAM$usedt){
-            rhcollect(sample(1:1000,1), 
-                cbind(as.data.table(bdim), as.data.table(as.list(mystats)))) 
+            rhcollect(sample(1:1000,1),
+                cbind(as.data.table(bdim), as.data.table(as.list(mystats))))
         }else{
             rhcollect(bdim,mystats)
         }
@@ -307,9 +309,3 @@ setup <- expression(map={
     library(rjson)
     load("partner-search-lookup.RData")
 })
-
-
-     
-
-
-
