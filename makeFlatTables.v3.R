@@ -286,7 +286,7 @@ summaries <- function(a,b){
 
         ## Your custom code can be here (in statcomputer):
         mystats        <- PARAM$statcomputer(days, control=list(
-            MULTIPLIER    = isn(PARAM$sampleMultiplier,1)
+            MULTIPLIER    = isn(PARAM$sampleMultiplier,1),
             jsObject      = b,
             profileCrDate = profileCrDate,
             granularity   = PARAM$granularity,
