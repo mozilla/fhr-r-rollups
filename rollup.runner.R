@@ -157,7 +157,7 @@ for(x in c( "day","week",'month')){
     (    data.frame(data.table(d$q(sprintf("select distinct(timeStart) as v from fhr_rollups_%s_base where snapshot='%s'",G(x),maxPreviousSnapshot)))[order(v),]))
     (keepdates <- range(unlist(list(day=timeChunksDay, week=timeChunksWk,month=timeChunksMonth)[[x]])))
 
-    (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),"20150824", keepdates[1]))
+    (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),maxPreviousSnapshot, keepdates[1]))
     ## ## This should be
     ## W <- NULL; for(i in 1:nrow(X)) if(keepdates[1] %between% X[i,c(ms,mas)]) {W=i;break};
     ## if(is.null(W)){
