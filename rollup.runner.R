@@ -72,7 +72,7 @@ rm(ll);
 rhmkdir(sprintf("/user/sguha/fhrrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
 hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
-BACK <- 100
+BACK <- 70
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE)
@@ -153,10 +153,18 @@ for(x in c( "day","week",'month')){
     ## Delete data from previous rollup run to remove duplicates
     maxPreviousSnapshot <- as.character(d$q(sprintf("select max(snapshot) from fhr_rollups_%s_base", G(x))))
     ## Keep only data before this date from previous snapshot
-    (   X <- data.frame(data.table(d$q(sprintf("select snapshot, min(timeStart) as ms, max(timeStart) as mas from fhr_rollups_%s_base  group by snapshot order by snapshot,ms",G(x))))))
+    (   X <- data.table(data.table(d$q(sprintf("select snapshot, min(timeStart) as ms, max(timeStart) as mas from fhr_rollups_%s_base  group by snapshot order by snapshot,ms",G(x))))))
     (    data.frame(data.table(d$q(sprintf("select distinct(timeStart) as v from fhr_rollups_%s_base where snapshot='%s'",G(x),maxPreviousSnapshot)))[order(v),]))
     (keepdates <- range(unlist(list(day=timeChunksDay, week=timeChunksWk,month=timeChunksMonth)[[x]])))
-    (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),maxPreviousSnapshot, keepdates[1]))
+
+    (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),"20150824", keepdates[1]))
+    ## ## This should be
+    ## W <- NULL; for(i in 1:nrow(X)) if(keepdates[1] %between% X[i,c(ms,mas)]) {W=i;break};
+    ## if(is.null(W)){
+    ##     stop("THERE IS A GAP!!!")
+    ## }else whichSnapShotCut <- X[W,snapshot]
+    ## (sql <- sprintf("delete from fhr_rollups_%s_base where snapshot='%s' and timeStart >= '%s'", G(x),whichSnapShotCut, keepdates[1]))
+
     dbSendUpdate(d$con,sql)
 
     system(sprintf("rm -rf /tmp/%s-%s",exceptionsFile,x))
