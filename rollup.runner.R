@@ -132,7 +132,7 @@ email(subj="Verica Import Begins", body="empty body",to="<joy@mozilla.com>")
 d <- odbc(user='fhr_rollup_rw', pass='WIATOoTv5qc4Macl')
 exceptionsFile = "fhr_tables_import_exceptions.txt"
 badDataFile =  "fhr_tables_import_baddata.txt"
-##Sys.setenv(HADOOP_HOME="")
+Sys.setenv(HADOOP_HOME="")
 
 G <- function(s) if(s %in% c("week","month")) sprintf("%sly",s) else "daily"
 for(x in c( "day","week",'month')){
