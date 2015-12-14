@@ -72,11 +72,11 @@ rm(ll);
 rhmkdir(sprintf("/user/sguha/fhrrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
 hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
+PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE)
+
 BACK <- 90
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
-PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE)
-
 timeChunksWk    <- weekTimeChunk(timeperiod$start, timeperiod$end)
 uweek           <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsummer
                            ,input    = I$name
@@ -89,6 +89,9 @@ uweek           <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
 
+BACK <- 175
+timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
+                   end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
 umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsummer
                            ,input    = I$name
@@ -100,7 +103,9 @@ umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
-
+BACK <- 175
+timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
+                   end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 timeChunksDay   <- dayTimeChunk(timeperiod$start, timeperiod$end)
 uday            <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsummer
                            ,input    = I$name
