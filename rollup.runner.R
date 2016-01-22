@@ -72,7 +72,7 @@ rm(ll);
 rhmkdir(sprintf("/user/sguha/fhrrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
 hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
-PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE)
+PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
 
 BACK <- 175
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
