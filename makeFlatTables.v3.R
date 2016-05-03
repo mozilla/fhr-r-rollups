@@ -45,6 +45,7 @@ getDimensions <- function(b){
     vendor   <- isn(b$geckoAppInfo$vendor, "missing")
     name     <- isn(b$geckoAppInfo$name, "missing")
     channel  <- isn(b$geckoAppInfo$updateChannel, "missing")
+    channel <- if(grepl("consequential", channel)) "missing" else channel
     os       <- isn(b$geckoAppInfo$os, "missing")
     osdetail <- local({
         if(os=="WINNT"){
