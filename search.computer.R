@@ -69,8 +69,8 @@ fileOriginDate <- as.Date(fileOrigin); fileOrigin <- strftime(fileOriginDate,"%Y
 rm(ll);
 
 ## Make the directory into which the rollups will be placed
-rhmkdir(sprintf("/user/sguha/fhrrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
-hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
+rhmkdir(sprintf("/user/sguha/srchrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
+hdfs.setwd(sprintf("/user/sguha/srchrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
 srchStats  <- function(days,control){
     MULTIPLIER <- control$MULTIPLIER
@@ -85,10 +85,9 @@ srchStats  <- function(days,control){
         tEbaySearch       = MULTIPLIER * computeSearchCounts(control$searchcounts, "ebay"),
         tSeznamSearch     = MULTIPLIER * computeSearchCounts(control$searchcounts, "seznam"),
         tAOLSearch        = MULTIPLIER * computeSearchCounts(control$searchcounts, "aol"),
-        tYahooJapanSearch = MULTIPLIER * computeSearchCounts(control$searchcounts, "Yahoo Japan"),
+        tYahooJapanSearch = MULTIPLIER * computeSearchCounts(control$searchcounts, "yahooJapan"),
         tOfficialSearch   = MULTIPLIER * computeSearchCounts(control$searchcounts,
-                                                             c("google", "yahoo", "bing", "otherofficial")),
-        
+                                                             c("google", "yahoo", "bing", "otherofficial"))
     )
 }
 
@@ -100,7 +99,7 @@ searchSummarizer  <- function(a,b){
     bdim              <- append(bdim, getStandardizedDimensions(bdim))
     bdim$snapshot     <- PARAM$whichdate
     bdim$granularity  <- PARAM$granularity
-    if(!bdim$isstdprofile) return()
+    if(bdim$isstdprofile!="TRUE") return()
     distribtype <- bdim$distribtype
     bdim$distribtype <- bdim$isstdprofile <- bdim$vendor <- bdim$name <- bdim$channel <- bdim$os <- bdim$locale <- bdim$version <- NULL
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
@@ -120,8 +119,8 @@ searchSummarizer  <- function(a,b){
         grouping[["yandex"]] <- yandex.searchnames(distribtype)
         grouping[["duckduckgo"]] <- duckduckgo.searchnames(distribtype)
         grouping[["ebay"]] <- ebay.searchnames(distribtype)
-        grouping[['seznam']] <- "seznam-cz"
-        grouping[['aol']] <- aol.searchnames(distribtype)
+        grouping[['seznam']] <- c("seznam-cz","other-Seznam")
+        grouping[['aol']] <- aol.searchnames(distribtype)        
         grouping[["other"]] <- NA
         searchcounts <- totalSearchCounts(days, provider = grouping, sap = FALSE)
 
@@ -156,4 +155,4 @@ umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
-BACK <- 75
+

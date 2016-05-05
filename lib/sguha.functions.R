@@ -10,7 +10,7 @@ winVerCheck <- function(ver,keepverforothers=FALSE){
     mun <- names(mu)
     id <- 1:length(mu)
     return(function(s){
-        if(is.na(s) || is.null(s) || length(s)==0) return(NA)
+        if(is.null(s) || is.na(s)  || length(s)==0) return("missing")
         for(i in id){
             if(grepl(mu[i],s)) return(mun[i])
         }
@@ -51,6 +51,7 @@ secondsToString <- function(secs,rnd=2){
 
 getOSXVersionAsString <- function(s){
     s <- isn(s)
+    if(is.na(s)) s <- "missing"
     if(grepl("^(10)",s)) return("darwinSnowLeopard")
     if(grepl("^(11)",s)) return("darwinLion")
     if(grepl("^(12)",s)) return("darwinMountainLion")
