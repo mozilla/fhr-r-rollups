@@ -1,4 +1,4 @@
-PCTMAX <- 20
+PCTMAX <- 1
 MONSEC <- 15
 library(sendmailR)
 email <- function(subj="blank subject", body="blank body",to="<sguha@mozilla.com>"){
@@ -44,33 +44,6 @@ waitForJobs <- function(L){
 }
 
 
-
-#########################################################################################
-## Running
-#########################################################################################
-source("/etc/mozilla.cluster.conf/other_configs/rhipe.mozilla.setup.R")
-sqtxt <- function (folders) rhfmt(type = "sequence", folder = folders, recordsAsText = TRUE)
-
-setwd("~/fhr-r-rollups")
-source("lib/search.R",keep.source=FALSE)
-source("lib/profileinfo.R",keep.source=FALSE)
-source("lib/activity.R",keep.source=FALSE)
-source("lib/sguha.functions.R",keep.source=FALSE)
-source("makeFlatTables.v3.R",keep.source=FALSE)
-
-I <- list(name=sqtxt("/user/sguha/fhr/samples/output/5pct"),tag=TRUE, sampleMultiplier = 0.2) 
-
-## Get the snapshot date from the sample creation time
-rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text')
-fileOrigin     <-  strsplit(rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text'),"\t")[[2]]
-ll             <- regexec("[0-9]{4}-[0-9]{2}-[0-9]{2}",fileOrigin)
-fileOrigin     <- substr(fileOrigin, ll[[1]],ll[[1]]+attributes(ll[[1]])$"match.length"-1)
-fileOriginDate <- as.Date(fileOrigin); fileOrigin <- strftime(fileOriginDate,"%Y%m%d")
-rm(ll);
-
-## Make the directory into which the rollups will be placed
-rhmkdir(sprintf("/user/sguha/srchrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
-hdfs.setwd(sprintf("/user/sguha/srchrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
 srchStats  <- function(days,control){
     MULTIPLIER <- control$MULTIPLIER
@@ -125,7 +98,8 @@ searchSummarizer  <- function(a,b){
         searchcounts <- totalSearchCounts(days, provider = grouping, sap = FALSE)
 
         ## Your custom code can be here (in statcomputer):
-        mystats        <- PARAM$statcomputer(days, control=list(
+        mystats        <- PARAM$sta
+        tcomputer(days, control=list(
                                                        MULTIPLIER    = isn(PARAM$sampleMultiplier,1),
                                                        searchcounts  = searchcounts)
                                              )
@@ -136,7 +110,32 @@ searchSummarizer  <- function(a,b){
 
 
 
+#########################################################################################
+## Running
+#########################################################################################
+source("/etc/mozilla.cluster.conf/other_configs/rhipe.mozilla.setup.R")
+sqtxt <- function (folders) rhfmt(type = "sequence", folder = folders, recordsAsText = TRUE)
 
+setwd("~/fhr-r-rollups")
+source("lib/search.R",keep.source=FALSE)
+source("lib/profileinfo.R",keep.source=FALSE)
+source("lib/activity.R",keep.source=FALSE)
+source("lib/sguha.functions.R",keep.source=FALSE)
+source("makeFlatTables.v3.R",keep.source=FALSE)
+
+I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE, sampleMultiplier = 100) 
+
+## Get the snapshot date from the sample creation time
+rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text')
+fileOrigin     <-  strsplit(rhread("/user/sguha/fhr/samples/output/createdTime.txt",type='text'),"\t")[[2]]
+ll             <- regexec("[0-9]{4}-[0-9]{2}-[0-9]{2}",fileOrigin)
+fileOrigin     <- substr(fileOrigin, ll[[1]],ll[[1]]+attributes(ll[[1]])$"match.length"-1)
+fileOriginDate <- as.Date(fileOrigin); fileOrigin <- strftime(fileOriginDate,"%Y%m%d")
+rm(ll);
+
+## Make the directory into which the rollups will be placed
+rhmkdir(sprintf("/user/sguha/srchrollup/%s", strftime(fileOriginDate,"%Y-%m-%d")))
+hdfs.setwd(sprintf("/user/sguha/srchrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=srchStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
 
@@ -145,14 +144,48 @@ BACK <- 175
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
-umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsummer
+umonth          <- rhwatch(map       = searchSummarizer, reduce=rhoptions()$temp$colsummer
                            ,input    = I$name
                            ,debug    = 'collect'
                            ,output   = 'rmonth'
-                           ,jobname  = sprintf("Monthly Rollup")
+                           ,jobname  = sprintf("Monthly Search Rollup")
                            ,mon.sec  = 0
                            ,setup    = setup
                            ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
+
+
+
+BACK <- 175
+timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
+                   end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
+timeChunksWk    <- weekTimeChunk(timeperiod$start, timeperiod$end)
+uweek           <- rhwatch(map       = searchSummarizer, reduce=rhoptions()$temp$colsummer
+                           ,input    = I$name
+                           ,debug    = 'collect'
+                           ,output   = 'rweek'
+                           ,jobname  = sprintf("Weekly Search Rollup")
+                           ,mon.sec  = 0
+                           ,setup    = setup
+                           ,shared   = shared.files
+                           ,read     = FALSE
+                           ,param    = list(PARAM=append(PARAM, list(granularity='week' ,listOfTimeChunks = timeChunksWk))))
+
+print(waitForJobs(list(uday,umonth, uweek)))
+
+## Converts the sequence files to text files for Vertica to import
+toText <- function(i,o,reducers=0){
+    y <- rhwatch(map=function(a,b){
+        b <- formatC(b, format="f",digits=0)
+        rhcollect(NULL, c(a,b))    },reduce=reducers, input=i
+                 ,output=rhfmt(type='text', folder=o,writeKey=FALSE,field.sep="\t",stringquote=""),read=FALSE)
+    a <- rhls(o)$file
+    rhdel(a[!grepl("part-",a)])
+    rhchmod(o,"777")
+    o
+}
+
+toText("rweek"  ,o="tweek")
+toText("rmonth" ,o="tmonth")
 
