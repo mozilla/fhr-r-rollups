@@ -174,18 +174,6 @@ uweek           <- rhwatch(map       = searchSummarizer, reduce=rhoptions()$temp
 
 print(waitForJobs(list(uday,umonth, uweek)))
 
-## Converts the sequence files to text files for Vertica to import
-toText <- function(i,o,reducers=0){
-    y <- rhwatch(map=function(a,b){
-        b <- formatC(b, format="f",digits=0)
-        rhcollect(NULL, c(a,b))    },reduce=reducers, input=i
-                 ,output=rhfmt(type='text', folder=o,writeKey=FALSE,field.sep="\t",stringquote=""),read=FALSE)
-    a <- rhls(o)$file
-    rhdel(a[!grepl("part-",a)])
-    rhchmod(o,"777")
-    o
-}
-
-toText("rweek"  ,o="tweek")
-toText("rmonth" ,o="tmonth")
+toText("rmonth" ,o="tmonth",red=1)
+toText("rweek"  ,o="tweek",red=1)
 
