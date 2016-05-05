@@ -74,7 +74,7 @@ searchSummarizer  <- function(a,b){
     bdim$granularity  <- PARAM$granularity
     if(bdim$isstdprofile!="TRUE") return()
     distribtype <- bdim$distribtype
-    bdim$distribtype <- bdim$isstdprofile <- bdim$vendor <- bdim$name <- bdim$channel <- bdim$os <- bdim$locale <- bdim$version <- NULL
+    bdim$distribtype <- bdim$isstdprofile <- bdim$vendor <- bdim$name <- bdim$channel <- bdim$os  <- bdim$version <- NULL
     lapply(PARAM$listOfTimeChunks,function(timeChunk){
         days           <- get.active.days(b, timeChunk['start'], timeChunk['end'])
         bdim$timeStart <- as.character(timeChunk['start'])
@@ -98,10 +98,8 @@ searchSummarizer  <- function(a,b){
         searchcounts <- totalSearchCounts(days, provider = grouping, sap = FALSE)
 
         ## Your custom code can be here (in statcomputer):
-        mystats        <- PARAM$sta
-        tcomputer(days, control=list(
-                                                       MULTIPLIER    = isn(PARAM$sampleMultiplier,1),
-                                                       searchcounts  = searchcounts)
+        mystats        <- PARAM$statcomputer(days, control=list(MULTIPLIER    = isn(PARAM$sampleMultiplier,1),
+                                                                searchcounts  = searchcounts)
                                              )
         rhcollect(bdim,mystats)
     })
