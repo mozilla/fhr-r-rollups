@@ -1,4 +1,4 @@
-PCTMAX <- 1
+PCTMAX <- 20
 MONSEC <- 15
 library(sendmailR)
 email <- function(subj="blank subject", body="blank body",to="<sguha@mozilla.com>"){
@@ -73,6 +73,54 @@ rhmkdir(sprintf("/user/sguha/fhrrollup/%s", strftime(fileOriginDate,"%Y-%m-%d"))
 hdfs.setwd(sprintf("/user/sguha/fhrrollup/%s/",strftime(fileOriginDate,"%Y-%m-%d")))
 
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
+
+searchSummarizer  <- function(a,b){
+    if(PARAM$needstobetagged){
+        b <- fromJSON(b)
+    }
+    bdim              <- getDimensions(b)
+    bdim              <- append(bdim, getStandardizedDimensions(bdim))
+    bdim$snapshot     <- PARAM$whichdate
+    bdim$granularity  <- PARAM$granularity
+    
+    lapply(PARAM$listOfTimeChunks,function(timeChunk){
+        days           <- get.active.days(b, timeChunk['start'], timeChunk['end'])
+        bdim$timeStart <- as.character(timeChunk['start'])
+        bdim$timeEnd   <- as.character(timeChunk['end'])
+        ## Activity measures aggregated over time chunk.
+        activity       <- totalActivity(days)
+        ## Search counts over time chunk by provivder.
+        grouping <- list(yahoo = yahoo.searchnames(bdim$distribtype),
+                        google = google.searchnames(bdim$distribtype),
+                        bing = bing.searchnames(bdim$distribtype))
+        ## Add a group for searches that use official plugins but none of the above.
+        officialsn <- official.searchnames(bdim$distribtype)
+        grouping[["otherofficial"]] <-
+            officialsn[!(officialsn %in% unlist(grouping, use.names = FALSE))]
+        grouping[["other"]] <- NA
+        searchcounts <- totalSearchCounts(days, provider = grouping, sap = FALSE)
+
+        ## Your custom code can be here (in statcomputer):
+        mystats        <- PARAM$statcomputer(days, control=list(
+            MULTIPLIER    = isn(PARAM$sampleMultiplier,1),
+            jsObject      = b,
+            profileCrDate = profileCrDate,
+            granularity   = PARAM$granularity,
+            timeChunk     = timeChunk,
+            activity      = activity,
+            searchcounts  = searchcounts)
+        )
+        if(PARAM$usedt){
+            rhcollect(sample(1:1000,1),
+                cbind(as.data.table(bdim), as.data.table(as.list(mystats))))
+        }else{
+            rhcollect(bdim,mystats)
+        }
+    })
+}
+
+
+
 
 BACK <- 175
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
