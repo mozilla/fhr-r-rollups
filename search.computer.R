@@ -44,10 +44,11 @@ waitForJobs <- function(L){
 }
 
 
-
 srchStats  <- function(days,control){
     MULTIPLIER <- control$MULTIPLIER
     c(
+        tActiveProfiles   = MULTIPLIER * isn(computeActives(days),0),
+        tActiveSeconds    = MULTIPLIER * computeActiveSeconds(control$activity),
         tTotalSearch      = MULTIPLIER * computeSearchCounts(control$searchcounts),
         tGoogleSearch     = MULTIPLIER * computeSearchCounts(control$searchcounts, "google"),
         tYahooSearch      = MULTIPLIER * computeSearchCounts(control$searchcounts, "yahoo"),
@@ -79,6 +80,7 @@ searchSummarizer  <- function(a,b){
         days           <- get.active.days(b, timeChunk['start'], timeChunk['end'])
         bdim$timeStart <- as.character(timeChunk['start'])
         bdim$timeEnd   <- as.character(timeChunk['end'])
+        activity       <- totalActivity(days)
         ## Search counts over time chunk by provivder.
         grouping <- list(yahoo = yahoo.searchnames(distribtype),
                          google = google.searchnames(distribtype),
@@ -99,6 +101,7 @@ searchSummarizer  <- function(a,b){
 
         ## Your custom code can be here (in statcomputer):
         mystats        <- PARAM$statcomputer(days, control=list(MULTIPLIER    = isn(PARAM$sampleMultiplier,1),
+                                                                activity = activity,
                                                                 searchcounts  = searchcounts)
                                              )
         rhcollect(bdim,mystats)
@@ -138,7 +141,7 @@ hdfs.setwd(sprintf("/user/sguha/srchrollup/%s/",strftime(fileOriginDate,"%Y-%m-%
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=srchStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
 
 
-BACK <- 175
+BACK <- 45
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
