@@ -141,7 +141,7 @@ hdfs.setwd(sprintf("/user/sguha/srchrollup/%s/",strftime(fileOriginDate,"%Y-%m-%
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=srchStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
 
 
-BACK <- 45
+BACK <- 170
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 timeChunksMonth <- monthTimeChunk(timeperiod$start, timeperiod$end)
@@ -150,12 +150,11 @@ umonth          <- rhwatch(map       = searchSummarizer, reduce=rhoptions()$temp
                            ,debug    = 'collect'
                            ,output   = 'rmonth'
                            ,jobname  = sprintf("Monthly Search Rollup")
-                           ,mon.sec  = 0
+                           ,mon.sec  = 10
                            ,setup    = setup
                            ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
-
 
 
 BACK <- 175

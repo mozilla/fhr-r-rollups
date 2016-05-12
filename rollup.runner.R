@@ -106,6 +106,10 @@ umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
                            ,shared   = shared.files
                            ,read     = FALSE
                            ,param    = list(PARAM=append(PARAM, list(granularity='month' ,listOfTimeChunks = timeChunksMonth))))
+
+
+I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE, sampleMultiplier = 1) ## tag if need to apply fromJSON
+PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
 BACK <- 75
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
