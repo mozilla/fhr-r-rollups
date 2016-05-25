@@ -141,13 +141,14 @@ toText("rday"   ,o="tday")
 if(exists("NotUsingCron") && NotUsingCron==TRUE){
 email(subj="Verica Import Begins", body="empty body",to="<joy@mozilla.com>")
 
+Sys.setenv(HADOOP_HOME="")
+Sys.sleep(10)
+library(RJDBC)
 d <- odbc(user='fhr_rollup_rw', pass='WIATOoTv5qc4Macl')
 exceptionsFile = "fhr_tables_import_exceptions.txt"
 badDataFile =  "fhr_tables_import_baddata.txt"
 
 
-Sys.setenv(HADOOP_HOME="")
-Sys.sleep(10)
 G <- function(s) if(s %in% c("week","month")) sprintf("%sly",s) else "daily"
 for(x in c( "day","week",'month')){
     ## We need to copy the data
@@ -163,7 +164,7 @@ for(x in c( "day","week",'month')){
     ## Now delete this data frokm the table if it exists (just in case
     ## we want tor run this merge again, we do not want a duplicate copy
     dbSendUpdate(d$con,sprintf( "DELETE FROM fhr_rollups_%s_base  where snapshot = '%s'", G(x), fileOrigin))
-
+    
     ## Delete data from previous rollup run to remove duplicates
     maxPreviousSnapshot <- as.character(d$q(sprintf("select max(snapshot) from fhr_rollups_%s_base", G(x))))
     ## Keep only data before this date from previous snapshot
