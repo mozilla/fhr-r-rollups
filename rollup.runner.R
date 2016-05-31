@@ -142,7 +142,7 @@ if(exists("NotUsingCron") && NotUsingCron==TRUE){
 email(subj="Verica Import Begins", body="empty body",to="<joy@mozilla.com>")
 
 Sys.setenv(HADOOP_HOME="")
-Sys.sleep(10)
+Sys.sleep(60)
 library(RJDBC)
 d <- odbc(user='fhr_rollup_rw', pass='WIATOoTv5qc4Macl')
 exceptionsFile = "fhr_tables_import_exceptions.txt"
