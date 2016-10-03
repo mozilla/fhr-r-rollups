@@ -110,7 +110,7 @@ umonth          <- rhwatch(map       = summaries, reduce=rhoptions()$temp$colsum
 
 I <- list(name=sqtxt("/user/sguha/fhr/samples/output/1pct"),tag=TRUE, sampleMultiplier = 1) ## tag if need to apply fromJSON
 PARAM      <- list(needstobetagged=I$tag,whichdate=fileOrigin,statcomputer=computeAllStats,usedt=FALSE,sampleMultiplier=I$sampleMultiplier)
-BACK <- 75
+BACK <- 100
 timeperiod <- list(start = strftime(fileOriginDate-BACK,"%Y-%m-%d"),
                    end   = strftime(fileOriginDate-1,"%Y-%m-%d"))
 timeChunksDay   <- dayTimeChunk(timeperiod$start, timeperiod$end)
@@ -141,15 +141,15 @@ toText("rday"   ,o="tday")
 if(exists("NotUsingCron") && NotUsingCron==TRUE){
 email(subj="Verica Import Begins", body="empty body",to="<joy@mozilla.com>")
 
-Sys.setenv(HADOOP_HOME="")
+
 Sys.sleep(60)
 library(RJDBC)
 d <- odbc(user='fhr_rollup_rw', pass='WIATOoTv5qc4Macl')
 exceptionsFile = "fhr_tables_import_exceptions.txt"
 badDataFile =  "fhr_tables_import_baddata.txt"
-
-
-G <- function(s) if(s %in% c("week","month")) sprintf("%sly",s) else "daily"
+library(RJDBC)
+Sys.setenv(HADOOP_HOME="")
+G <- function(s) {if(s %in% c("week","month")) sprintf("%sly",s) else "daily"}
 for(x in c( "day","week",'month')){
     ## We need to copy the data
     inputLocation = sprintf("%s/t%s", hdfs.getwd(),x)
